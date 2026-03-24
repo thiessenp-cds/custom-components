@@ -1,0 +1,274 @@
+/*
+ * combobox.css — shadow DOM styles for <app-combobox>
+ *
+ * Visual design follows GCDS (Government of Canada Design System):
+ * https://github.com/cds-snc/gcds-components
+ *
+ * CSS custom properties are re-declared here because shadow DOM does NOT
+ * inherit custom properties from the document by default — they pierce
+ * the shadow boundary only when explicitly declared inside :host or
+ * re-declared at root level inside the shadow.
+ */
+
+/* ── Token bridge (shadow DOM inherits these from :root via CSS custom props) ── */
+:host {
+  /* Colours */
+  --gcds-text-primary:    #333333;
+  --gcds-text-secondary:  #595959;
+  --gcds-text-disabled:   #808080;
+  --gcds-bg-white:        #ffffff;
+  --gcds-border-default:  #8c8c8c;
+  --gcds-border-radius-sm:  0.125rem;
+  --gcds-border-radius-md:  0.375rem;
+  --gcds-border-width-md:   0.125rem;
+  --gcds-border-width-lg:   0.25rem;
+  --gcds-danger-border:   #b3192e;
+  --gcds-danger-text:     #b3192e;
+  --gcds-focus-color:     #1354ec;
+  --gcds-focus-shadow:    0 0 0 0.125rem #ffffff;
+  --gcds-disabled-bg:     #d9d9d9;
+
+  display: block;
+  font-family: 'Noto Sans', sans-serif;
+  font-size: inherit;
+}
+
+/* ── Root wrapper ──────────────────────────────────────────────────────────── */
+.combobox {
+  position: relative;
+  max-width: 28rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Label ─────────────────────────────────────────────────────────────────── */
+.combobox__label {
+  display: block;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--gcds-text-primary);
+  margin-bottom: 0.5rem;
+  cursor: default;
+}
+
+.combobox__required {
+  font-weight: 400;
+  margin-left: 0.375rem;
+  color: var(--gcds-text-primary);
+}
+
+/* ── Hint ──────────────────────────────────────────────────────────────────── */
+.combobox__hint {
+  font-size: 1rem;
+  color: var(--gcds-text-secondary);
+  margin: -0.25rem 0 0.5rem;
+  line-height: 1.5;
+}
+
+/* ── Error message ─────────────────────────────────────────────────────────── */
+.combobox__error {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gcds-danger-text);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  line-height: 1.5;
+}
+
+.combobox__error::before {
+  content: '⚠';
+  flex-shrink: 0;
+}
+
+/* ── Field (input + toggle button side by side) ─────────────────────────────── */
+.combobox__field {
+  display: flex;
+  align-items: stretch;
+}
+
+/* ── Input ─────────────────────────────────────────────────────────────────── */
+.combobox__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 3rem;
+  padding: 0.5rem;
+  font-size: 1.25rem;
+  font-family: 'Noto Sans', sans-serif;
+  line-height: 1.6;
+  color: var(--gcds-text-primary);
+  background: var(--gcds-bg-white);
+  border: var(--gcds-border-width-md) solid var(--gcds-border-default);
+  border-right: none;
+  border-radius: var(--gcds-border-radius-sm) 0 0 var(--gcds-border-radius-sm);
+  outline: none;
+  appearance: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, outline 0.15s ease;
+}
+
+.combobox__input::placeholder {
+  color: var(--gcds-text-secondary);
+  font-style: italic;
+}
+
+@layer focus {
+  .combobox__input:focus {
+    border-color: var(--gcds-focus-color);
+    outline: var(--gcds-border-width-lg) solid var(--gcds-focus-color);
+    outline-offset: var(--gcds-border-width-md);
+    box-shadow: var(--gcds-focus-shadow);
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@layer disabled {
+  .combobox__input[disabled] {
+    background: var(--gcds-disabled-bg);
+    color: var(--gcds-text-disabled);
+    border-color: var(--gcds-text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+/* ── Toggle button ─────────────────────────────────────────────────────────── */
+.combobox__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  min-height: 3rem;
+  flex-shrink: 0;
+  background: var(--gcds-bg-white);
+  border: var(--gcds-border-width-md) solid var(--gcds-border-default);
+  border-left: var(--gcds-border-width-sm, 0.0625rem) solid #cccccc;
+  border-radius: 0 var(--gcds-border-radius-sm) var(--gcds-border-radius-sm) 0;
+  cursor: pointer;
+  color: var(--gcds-text-secondary);
+  outline: none;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.combobox__toggle:hover:not([disabled]) {
+  background: #e8eef7;
+  color: var(--gcds-focus-color);
+  border-color: var(--gcds-focus-color);
+}
+
+@layer focus {
+  .combobox__toggle:focus-visible {
+    border-color: var(--gcds-focus-color);
+    outline: var(--gcds-border-width-lg) solid var(--gcds-focus-color);
+    outline-offset: var(--gcds-border-width-md);
+    box-shadow: var(--gcds-focus-shadow);
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@layer disabled {
+  .combobox__toggle[disabled] {
+    background: var(--gcds-disabled-bg);
+    color: var(--gcds-text-disabled);
+    border-color: var(--gcds-text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+.combobox__toggle svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.combobox__toggle--open svg {
+  transform: rotate(180deg);
+}
+
+/* ── Error state ───────────────────────────────────────────────────────────── */
+@layer error {
+  .combobox--error .combobox__input:not(:focus) {
+    border-color: var(--gcds-danger-border);
+  }
+
+  .combobox--error .combobox__toggle:not(:focus-visible) {
+    border-color: var(--gcds-danger-border);
+  }
+
+  /* Show error border even on focus — matches GCDS pattern of keeping error visible */
+  .combobox--error .combobox__input:focus {
+    border-color: var(--gcds-focus-color);
+    outline-color: var(--gcds-focus-color);
+  }
+}
+
+/* ── Listbox ───────────────────────────────────────────────────────────────── */
+.combobox__listbox {
+  position: absolute;
+  top: calc(100% - var(--gcds-border-width-md, 0.125rem));
+  left: 0;
+  right: 0;
+  background: var(--gcds-bg-white);
+  border: var(--gcds-border-width-md) solid var(--gcds-focus-color);
+  border-top: none;
+  border-radius: 0 0 var(--gcds-border-radius-sm) var(--gcds-border-radius-sm);
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  max-height: 16rem;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Options ───────────────────────────────────────────────────────────────── */
+.combobox__option {
+  padding: 0.5rem;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: var(--gcds-text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.combobox__option:hover {
+  background: #e8eef7;
+}
+
+/* Keyboard-active option */
+.combobox__option--active {
+  background: var(--gcds-focus-color);
+  color: #ffffff;
+}
+
+.combobox__option--active:hover {
+  background: #1048c8;
+}
+
+/* Committed selection checkmark */
+.combobox__option--selected::after {
+  content: ' ✓';
+  font-weight: 700;
+  color: var(--gcds-focus-color);
+}
+
+.combobox__option--active.combobox__option--selected::after {
+  color: #c9d9fc;
+}
+
+/* Disabled option */
+.combobox__option--disabled {
+  color: var(--gcds-text-disabled);
+  cursor: not-allowed;
+}
+
+/* ── No results ─────────────────────────────────────────────────────────────── */
+.combobox__no-results {
+  padding: 0.5rem;
+  font-size: 1rem;
+  color: var(--gcds-text-secondary);
+  font-style: italic;
+}
+

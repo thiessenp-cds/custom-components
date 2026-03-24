@@ -1,0 +1,43 @@
+/**
+ * JSX intrinsic element declarations for custom elements.
+ *
+ * Extend this file as new custom elements are added to src/lib/components/.
+ * Each element needs its attribute interface declared here so TypeScript
+ * allows it in TSX without using `any` casts or wrapper components.
+ */
+
+import type React from 'react'
+
+declare module 'react' {
+  namespace JSX {
+    interface IntrinsicElements {
+      /**
+       * <app-combobox> — accessible combobox with list autocomplete.
+       * Registered by: src/lib/components/combobox/combobox.ts
+       */
+      'app-combobox': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        /** Visible label text */
+        label?: string
+        /** Hint / description text */
+        hint?: string
+        /** Input placeholder */
+        placeholder?: string
+        /** Form field name */
+        name?: string
+        /** Disables the control */
+        disabled?: boolean
+        /** Marks as required */
+        required?: boolean
+        /** Programmatically sets the value */
+        value?: string
+        /** JSON array of options: '[{"value":"ca","label":"Canada"}]' */
+        options?: string
+        /** Error message; when set applies red border and shows message below the label */
+        error?: string
+      }
+    }
+  }
+}

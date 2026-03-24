@@ -1,0 +1,119 @@
+/* ── Page heading ────────────────────────────────────── */
+.page-heading {
+  font-family: var(--gcds-font-families-heading);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gcds-text-primary);
+  margin: var(--gcds-spacing-300) 0 var(--gcds-spacing-50);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--gcds-spacing-150);
+  border-bottom: var(--gcds-border-width-xl) solid var(--gcds-color-blue-dark);
+  padding-bottom: var(--gcds-spacing-150);
+}
+
+.page-heading__ref-link {
+  font-family: var(--gcds-font-families-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--gcds-link-default);
+  text-decoration: underline;
+}
+
+.page-heading__ref-link:hover {
+  color: var(--gcds-link-hover);
+}
+
+.page-heading__ref-link:focus-visible {
+  outline: var(--gcds-focus-outline-width) solid var(--gcds-focus-outline-color);
+  outline-offset: var(--gcds-focus-outline-offset);
+  box-shadow: var(--gcds-focus-box-shadow);
+  border-radius: var(--gcds-border-radius-sm);
+}
+
+/* ── Page divider ────────────────────────────────────── */
+.page-divider {
+  border: none;
+  border-top: var(--gcds-border-width-sm) solid var(--gcds-border-light);
+  margin: var(--gcds-spacing-300) 0 var(--gcds-spacing-500);
+}
+
+/* ── Section group heading ───────────────────────────── */
+.group-heading {
+  font-family: var(--gcds-font-families-body);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gcds-text-primary);
+  margin: 0 0 var(--gcds-spacing-50);
+}
+
+.group-heading__sub {
+  font-size: 1rem;
+  color: var(--gcds-text-secondary);
+  margin: 0 0 var(--gcds-spacing-400);
+  line-height: 1.6;
+}
+
+/* ── Example sections ────────────────────────────────── */
+.section {
+  margin-bottom: var(--gcds-spacing-600);
+}
+
+.section__heading {
+  font-family: var(--gcds-font-families-body);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--gcds-text-primary);
+  margin: 0 0 var(--gcds-spacing-50);
+}
+
+.section__description {
+  font-size: 1rem;
+  color: var(--gcds-text-secondary);
+  margin: 0 0 var(--gcds-spacing-200);
+  line-height: 1.6;
+}
+
+.section__body {
+  margin-top: var(--gcds-spacing-200);
+}
+
+/* ── Preview panel ───────────────────────────────────── */
+.preview {
+  background: var(--gcds-bg-white);
+  border: var(--gcds-border-width-sm) solid var(--gcds-border-light);
+  border-radius: var(--gcds-border-radius-md);
+  padding: var(--gcds-spacing-300);
+}
+
+/* ── Value / success output ──────────────────────────── */
+.example-value {
+  margin: var(--gcds-spacing-200) 0 0;
+  font-size: 0.9375rem;
+  color: var(--gcds-text-secondary);
+}
+
+.example-success {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--gcds-color-green-default);
+  font-weight: 600;
+}
+
+/* ── Related pages ───────────────────────────────────── */
+.page-related {
+  font-size: 1rem;
+  color: var(--gcds-text-secondary);
+  margin: 0;
+}
+
+.page-related a {
+  color: var(--gcds-link-default);
+}
+
+.page-related a:hover {
+  color: var(--gcds-link-hover);
+}
+
