@@ -183,19 +183,6 @@
   outline: none;
 }
 
-  position: absolute;
-  top: -9999px;
-  left: 0;
-  background: var(--gcds-focus-outline-color);
-  color: #ffffff;
-  padding: var(--gcds-spacing-100) var(--gcds-spacing-200);
-  text-decoration: none;
-  font-family: var(--gcds-font-families-body);
-  font-weight: 600;
-  font-size: 1rem;
-  z-index: 100;
-}
-
 .skip-link:focus {
   top: 0;
 }

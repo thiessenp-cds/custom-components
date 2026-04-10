@@ -113,7 +113,6 @@ const ISSUES: Issue[] = []
 
 export default function ComboboxReactPage() {
   const [defaultSelected, setDefaultSelected] = useState<ComboboxChangeDetail | null>(null)
-  const [hintSelected, setHintSelected] = useState<ComboboxChangeDetail | null>(null)
   const [requiredError, setRequiredError] = useState<string | null>(null)
   const [submittedValue, setSubmittedValue] = useState<string | null>(null)
 
