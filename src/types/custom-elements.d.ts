@@ -38,6 +38,35 @@ declare module 'react' {
         /** Error message; when set applies red border and shows message below the label */
         error?: string
       }
+
+      /**
+       * <app-combobox-fallback-select> — combobox on pointer devices; native
+       * select on touch/mobile (pointer: coarse).
+       * Registered by: src/lib/components/combobox-fallback-select/combobox-fallback-select.ts
+       */
+      'app-combobox-fallback-select': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        /** Visible label text */
+        label?: string
+        /** Hint / description text */
+        hint?: string
+        /** Input placeholder */
+        placeholder?: string
+        /** Form field name */
+        name?: string
+        /** Disables the control */
+        disabled?: boolean
+        /** Marks as required */
+        required?: boolean
+        /** Programmatically sets the value */
+        value?: string
+        /** JSON array of options: '[{"value":"ca","label":"Canada"}]' */
+        options?: string
+        /** Error message; when set applies red border and shows message below the label */
+        error?: string
+      }
     }
   }
 }

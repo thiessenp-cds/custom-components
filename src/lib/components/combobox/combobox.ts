@@ -1,22 +1,12 @@
 import { CustomElement } from '../../CustomElement'
 import styles from './combobox.css?inline'
+import {
+  parseOptionsFromAttr,
+  parseOptionsFromChildren,
+} from './combobox-shared'
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-export interface ComboboxOption {
-  value: string
-  label: string
-  disabled?: boolean
-}
-
-export interface ComboboxChangeDetail {
-  value: string
-  label: string
-}
-
-export interface ComboboxInputDetail {
-  inputValue: string
-}
+export type { ComboboxOption, ComboboxChangeDetail, ComboboxInputDetail } from './combobox-shared'
+import type { ComboboxOption, ComboboxChangeDetail, ComboboxInputDetail } from './combobox-shared'
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -201,23 +191,12 @@ export class AppCombobox extends CustomElement {
   // ── Private: option parsing ───────────────────────────────────────────────────
 
   private _parseOptionsFromAttr(json: string): void {
-    try {
-      const parsed = JSON.parse(json) as ComboboxOption[]
-      this._options = parsed
-    } catch {
-      this._options = []
-    }
+    this._options = parseOptionsFromAttr(json)
     this._filteredOptions = [...this._options]
   }
 
   private _parseOptionsFromChildren(): void {
-    this._options = Array.from(
-      this.querySelectorAll<HTMLOptionElement>('option'),
-    ).map((opt) => ({
-      value: opt.value,
-      label: opt.textContent?.trim() ?? opt.value,
-      disabled: opt.disabled,
-    }))
+    this._options = parseOptionsFromChildren(this)
     this._filteredOptions = [...this._options]
   }
 

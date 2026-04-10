@@ -23,3 +23,9 @@ export type { ComboboxOption, ComboboxChangeDetail, ComboboxInputDetail } from '
 // React wrappers
 export { Combobox } from './components/combobox'
 export type { ComboboxProps } from './components/combobox'
+
+// ── Combobox with fallback select ─────────────────────────────────────────────
+export { AppComboboxFallbackSelect } from './components/combobox-fallback-select/combobox-fallback-select'
+
+export { ComboboxFallbackSelect } from './components/combobox-fallback-select'
+export type { ComboboxFallbackSelectProps } from './components/combobox-fallback-select'

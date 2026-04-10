@@ -1,0 +1,86 @@
+/*
+ * combobox-fallback-select.css — additional shadow DOM styles for
+ * <app-combobox-fallback-select>.
+ *
+ * combobox.css is imported first (in combobox-fallback-select.ts) via
+ * adoptStyle(), so all .combobox__* rules (label, hint, error, field,
+ * listbox, options) are already available. This file only adds:
+ *
+ *   1. Section show/hide toggle via @media (pointer: coarse)
+ *   2. Native <select> styling that matches the combobox input visually
+ *
+ * CSS custom properties are inherited from combobox.css's :host block —
+ * no need to re-declare the token bridge here.
+ */
+
+/* ── Section visibility ────────────────────────────────────────────────────── */
+
+/* Default (pointer: fine — mouse / trackpad): show combobox, hide select */
+.cfs__select-section {
+  display: none;
+}
+
+.cfs__combobox-section {
+  display: block;
+}
+
+/* Touch / mobile (pointer: coarse): show select, hide combobox */
+@media (pointer: coarse) {
+  .cfs__combobox-section {
+    display: none;
+  }
+
+  .cfs__select-section {
+    display: block;
+  }
+}
+
+/* ── Native select ─────────────────────────────────────────────────────────── */
+
+.cfs__select {
+  display: block;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.5rem 2.25rem 0.5rem 0.5rem; /* right padding for native chevron */
+  font-size: 1.25rem;
+  font-family: 'Noto Sans', sans-serif;
+  line-height: 1.6;
+  color: var(--gcds-text-primary);
+  background: var(--gcds-bg-white);
+  border: var(--gcds-border-width-md) solid var(--gcds-border-default);
+  border-radius: var(--gcds-border-radius-sm);
+  outline: none;
+  appearance: auto;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+@layer focus {
+  .cfs__select:focus {
+    border-color: var(--gcds-focus-color);
+    outline: var(--gcds-border-width-lg) solid var(--gcds-focus-color);
+    outline-offset: var(--gcds-border-width-md);
+    box-shadow: var(--gcds-focus-shadow);
+  }
+}
+
+@layer disabled {
+  .cfs__select[disabled] {
+    background: var(--gcds-disabled-bg);
+    color: var(--gcds-text-disabled);
+    border-color: var(--gcds-text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+@layer error {
+  .combobox--error .cfs__select:not(:focus) {
+    border-color: var(--gcds-danger-border);
+  }
+
+  .combobox--error .cfs__select:focus {
+    border-color: var(--gcds-focus-color);
+    outline-color: var(--gcds-focus-color);
+  }
+}

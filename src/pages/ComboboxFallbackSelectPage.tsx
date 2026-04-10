@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 import { Layout } from '../App'
 import IssueTable from '../components/IssueTable'
 import type { Issue } from '../components/IssueTable'
-import type { ComboboxOption, ComboboxChangeDetail } from '../lib/components/combobox/combobox'
-// Registers <app-combobox> as a custom element
-import '../lib/components/combobox/combobox'
+import type { ComboboxOption, ComboboxChangeDetail } from '../lib/components/combobox-fallback-select/combobox-fallback-select'
+// Registers <app-combobox-fallback-select> as a custom element
+import '../lib/components/combobox-fallback-select/combobox-fallback-select'
 import '../styles/page.css'
 
 // ── Local helpers ─────────────────────────────────────────────────────────────
@@ -28,9 +27,9 @@ function Section({ title, description, children }: SectionProps) {
   )
 }
 
-// ── RawComboboxDemo ───────────────────────────────────────────────────────────
+// ── RawFallbackSelectDemo ─────────────────────────────────────────────────────
 
-interface RawComboboxDemoProps {
+interface RawFallbackSelectDemoProps {
   label: string
   hint?: string
   placeholder?: string
@@ -43,7 +42,7 @@ interface RawComboboxDemoProps {
   onChange?: (detail: ComboboxChangeDetail) => void
 }
 
-function RawComboboxDemo({
+function RawFallbackSelectDemo({
   label,
   hint,
   placeholder,
@@ -54,7 +53,7 @@ function RawComboboxDemo({
   options,
   showValue = true,
   onChange,
-}: RawComboboxDemoProps) {
+}: RawFallbackSelectDemoProps) {
   const ref = useRef<HTMLElement>(null)
   const [selected, setSelected] = useState<ComboboxChangeDetail | null>(null)
 
@@ -72,7 +71,7 @@ function RawComboboxDemo({
 
   return (
     <>
-      <app-combobox
+      <app-combobox-fallback-select
         ref={ref}
         label={label}
         hint={hint}
@@ -93,8 +92,6 @@ function RawComboboxDemo({
 }
 
 // ── RequiredFormDemo ──────────────────────────────────────────────────────────
-// Shows inline error handling: error message appears on submit with no selection
-// and clears as soon as the user makes a choice.
 
 function RequiredFormDemo() {
   const [error, setError] = useState<string | null>(null)
@@ -105,7 +102,7 @@ function RequiredFormDemo() {
       onSubmit={(e) => {
         e.preventDefault()
         const data = new FormData(e.currentTarget)
-        const province = data.get('province') as string
+        const province = data.get('province-cfs') as string
         if (!province) {
           setError('Select a province or territory')
           setSubmittedValue(null)
@@ -117,10 +114,10 @@ function RequiredFormDemo() {
       style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', alignItems: 'flex-start' }}
       noValidate
     >
-      <RawComboboxDemo
+      <RawFallbackSelectDemo
         label="Province or territory"
         hint="Select the province or territory where you currently reside."
-        name="province"
+        name="province-cfs"
         required
         options={PROVINCES}
         error={error ?? undefined}
@@ -166,37 +163,25 @@ const COUNTRIES: ComboboxOption[] = [
   { value: 'cl', label: 'Chile' },
   { value: 'cn', label: 'China' },
   { value: 'co', label: 'Colombia' },
-  { value: 'hr', label: 'Croatia' },
-  { value: 'cz', label: 'Czech Republic' },
   { value: 'dk', label: 'Denmark' },
   { value: 'eg', label: 'Egypt' },
-  { value: 'et', label: 'Ethiopia' },
   { value: 'fi', label: 'Finland' },
   { value: 'fr', label: 'France' },
   { value: 'de', label: 'Germany' },
   { value: 'gh', label: 'Ghana' },
   { value: 'gr', label: 'Greece' },
-  { value: 'hu', label: 'Hungary' },
   { value: 'in', label: 'India' },
-  { value: 'id', label: 'Indonesia' },
   { value: 'ie', label: 'Ireland' },
-  { value: 'il', label: 'Israel' },
   { value: 'it', label: 'Italy' },
   { value: 'jp', label: 'Japan' },
-  { value: 'jo', label: 'Jordan' },
   { value: 'ke', label: 'Kenya' },
   { value: 'mx', label: 'Mexico' },
-  { value: 'ma', label: 'Morocco' },
   { value: 'nl', label: 'Netherlands' },
   { value: 'nz', label: 'New Zealand' },
   { value: 'ng', label: 'Nigeria' },
   { value: 'no', label: 'Norway' },
   { value: 'pk', label: 'Pakistan' },
-  { value: 'pe', label: 'Peru' },
-  { value: 'ph', label: 'Philippines' },
-  { value: 'pl', label: 'Poland' },
   { value: 'pt', label: 'Portugal' },
-  { value: 'ro', label: 'Romania' },
   { value: 'ru', label: 'Russia' },
   { value: 'sa', label: 'Saudi Arabia' },
   { value: 'za', label: 'South Africa' },
@@ -204,10 +189,8 @@ const COUNTRIES: ComboboxOption[] = [
   { value: 'es', label: 'Spain' },
   { value: 'se', label: 'Sweden' },
   { value: 'ch', label: 'Switzerland' },
-  { value: 'th', label: 'Thailand' },
   { value: 'tr', label: 'Turkey' },
   { value: 'ua', label: 'Ukraine' },
-  { value: 'ae', label: 'United Arab Emirates' },
   { value: 'gb', label: 'United Kingdom' },
   { value: 'us', label: 'United States' },
   { value: 'vn', label: 'Vietnam' },
@@ -231,59 +214,40 @@ const PROVINCES: ComboboxOption[] = [
 
 // ── Known issues ──────────────────────────────────────────────────────────────
 
-const ISSUES: Issue[] = [
-  {
-    combo: 'iOS / on-screen keyboard',
-    description:
-      'When the dropdown list is showing, the on-screen keyboard up/down navigation buttons do not move focus through the options.',
-  },
-  {
-    combo: 'iOS / swipe gesture',
-    description:
-      'Swiping through the dropdown list, a user can swipe past the end of the list and exit the combobox, leaving them disoriented.',
-  },
-]
+const ISSUES: Issue[] = []
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function ComboboxPage() {
+export default function ComboboxFallbackSelectPage() {
   return (
     <Layout backLink>
       <h1 className="page-heading">
-        Combobox
+        Combobox with fallback select
         <a
           className="page-heading__ref-link"
-          href="https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/"
+          href="https://github.com/alphagov/accessible-autocomplete"
           target="_blank"
           rel="noreferrer"
         >
-          WAI-ARIA pattern reference
+          inspired by GOV.UK accessible autocomplete
         </a>
       </h1>
 
       <p className="page-description">
-        An accessible combobox with list autocomplete (type-to-filter). Options are filtered as the
-        user types; keyboard navigation (↓ / ↑, Enter, Escape) and full form participation via{' '}
-        <code>ElementInternals</code> are supported. Implemented following the{' '}
-        <a
-          href="https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          WAI-ARIA combobox with list autocomplete
-        </a>{' '}
-        authoring pattern.
+        On <strong>touch / mobile devices</strong> (<code>pointer: coarse</code>), a native{' '}
+        <code>&lt;select&gt;</code> is rendered for reliable cross-device support. On{' '}
+        <strong>pointer devices</strong> (mouse / trackpad), the full combobox autocomplete widget is
+        shown. Both modes fire the same <code>combobox-change</code> event and participate in forms
+        via <code>ElementInternals</code>.
       </p>
-
-      <IssueTable issues={ISSUES} />
 
       <hr className="page-divider" />
 
       <Section
         title="Default"
-        description="Type to filter the list of options. Use ↓ / ↑ to navigate, Enter to select, Escape to dismiss."
+        description="Type to filter the list of options. Use ↓ / ↑ to navigate, Enter to select, Escape to dismiss. On a touch device a native select is shown instead."
       >
-        <RawComboboxDemo
+        <RawFallbackSelectDemo
           label="Select a country"
           placeholder="Search countries…"
           name="country-default"
@@ -293,16 +257,16 @@ export default function ComboboxPage() {
 
       <Section
         title="Required"
-        description="Form participation via ElementInternals. Submitting without a selection triggers inline error handling."
+        description="Form participation via ElementInternals. Works in both modes — submitting without a selection triggers inline error handling."
       >
         <RequiredFormDemo />
       </Section>
 
       <Section
         title="With error"
-        description="The error attribute renders an error message and applies error styling — shown here in its pre-set state."
+        description="The error attribute renders an error message and applies error styling in both combobox and native select modes."
       >
-        <RawComboboxDemo
+        <RawFallbackSelectDemo
           label="Province or territory"
           hint="Select the province or territory where you currently reside."
           name="country-error-static"
@@ -314,9 +278,9 @@ export default function ComboboxPage() {
 
       <Section
         title="Disabled"
-        description="The disabled attribute is reflected to the shadow DOM input and toggle button."
+        description="The disabled attribute is reflected to both the combobox input and the native select."
       >
-        <RawComboboxDemo
+        <RawFallbackSelectDemo
           label="Select a country"
           placeholder="Search countries…"
           name="country-disabled"
@@ -325,6 +289,8 @@ export default function ComboboxPage() {
           showValue={false}
         />
       </Section>
+
+      <IssueTable issues={ISSUES} />
     </Layout>
   )
 }
