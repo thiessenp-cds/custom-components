@@ -251,20 +251,12 @@ export default function ComboboxPage() {
     <Layout backLink>
       <h1 className="page-heading">
         Combobox
-        <a
-          className="page-heading__ref-link"
-          href="https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          WAI-ARIA pattern reference
-        </a>
       </h1>
 
       <p className="page-description">
         An accessible combobox with list autocomplete (type-to-filter). Options are filtered as the
         user types; keyboard navigation (↓ / ↑, Enter, Escape) and full form participation via{' '}
-        <code>ElementInternals</code> are supported. Implemented following the{' '}
+        <code>ElementInternals</code> are supported. This was Implemented following the{' '}
         <a
           href="https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/"
           target="_blank"
@@ -273,6 +265,9 @@ export default function ComboboxPage() {
           WAI-ARIA combobox with list autocomplete
         </a>{' '}
         authoring pattern.
+      </p>
+      <p className="page-description">
+        For a React compatible version, visit the <Link to="/combobox/react">React wrapped combobox</Link> page.
       </p>
 
       <IssueTable issues={ISSUES} />

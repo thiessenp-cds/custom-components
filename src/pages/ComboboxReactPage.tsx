@@ -156,25 +156,6 @@ export default function ComboboxReactPage() {
       </Section>
 
       <Section
-        title="With hint text"
-        description="Hint text below the label is exposed to assistive technology via aria-describedby."
-      >
-        <Combobox
-          label="Select a country"
-          hint="Start typing to filter the list of countries."
-          placeholder="Type to search…"
-          name="country-hint"
-          options={COUNTRIES}
-          onChange={(d) => setHintSelected(d.value ? d : null)}
-        />
-        {hintSelected && (
-          <p className="example-value">
-            Selected: <code>{hintSelected.label} ({hintSelected.value})</code>
-          </p>
-        )}
-      </Section>
-
-      <Section
         title="Required"
         description="Submitting without a selection triggers inline error handling via the error prop."
       >

@@ -39,9 +39,15 @@ export function Layout({ children, backLink, backLinkTo = '/', backLinkLabel = '
       >
         Skip to main content
       </a>
+      <header className="site-header" role="banner">
+        <div className="site-header__inner">
+          <Link to="/" className="site-header__title">My Custom Components</Link>
+          <span className="site-header__tagline">Accessible Web Component Workbench</span>
+        </div>
+      </header>
       <div className="layout-container">
         {backLink && (
-          <nav aria-label="Breadcrumb">
+          <nav aria-label="Breadcrumb" className="breadcrumb">
             <Link to={backLinkTo} className="back-link">← {backLinkLabel}</Link>
           </nav>
         )}
@@ -59,7 +65,7 @@ function HomePage() {
     <Layout>
       <h1 className="home-heading">My Custom Components</h1>
       <p className="home-description">
-        A workbench for exploring and prototyping accessible HTML custom elements.
+        A workbench for exploring and prototyping accessible HTML custom elements. The <a href="https://design-system.canada.ca/en/">GCDS</a> tokens are used to style this site and the components here.
       </p>
 
       {components.length > 0 && (

@@ -223,16 +223,18 @@ export default function ComboboxFallbackSelectPage() {
     <Layout backLink>
       <h1 className="page-heading">
         Combobox with fallback select
+      </h1>
+
+      <p className="page-description">This combobox was inspired by the{' '}
         <a
           className="page-heading__ref-link"
           href="https://github.com/alphagov/accessible-autocomplete"
           target="_blank"
           rel="noreferrer"
         >
-          inspired by GOV.UK accessible autocomplete
-        </a>
-      </h1>
-
+        GOV.UK accessible autocomplete
+        </a>.
+     </p>
       <p className="page-description">
         On <strong>touch / mobile devices</strong> (<code>pointer: coarse</code>), a native{' '}
         <code>&lt;select&gt;</code> is rendered for reliable cross-device support. On{' '}
