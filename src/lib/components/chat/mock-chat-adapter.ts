@@ -8,10 +8,11 @@ import type {
 // ── Seed data ─────────────────────────────────────────────────────────────────
 
 const MOCK_CONTACTS: ChatContact[] = [
-  { id: 'alice', displayName: 'Alice Tremblay', status: 'online', avatarInitials: 'AT', unreadCount: 2 },
-  { id: 'bob', displayName: 'Bob Martin', status: 'away', avatarInitials: 'BM', unreadCount: 0 },
-  { id: 'carol', displayName: 'Carol Singh', status: 'offline', avatarInitials: 'CS', unreadCount: 5 },
-  { id: 'david', displayName: 'David Okafor', status: 'online', avatarInitials: 'DO', unreadCount: 0 },
+  { id: 'ian',    displayName: 'Ian Malcolm',    status: 'online',  avatarInitials: 'IM', unreadCount: 2 },
+  { id: 'ellie',  displayName: 'Ellie Sattler',  status: 'online',  avatarInitials: 'ES', unreadCount: 0 },
+  { id: 'dennis', displayName: 'Dennis Nedry',   status: 'away',    avatarInitials: 'DN', unreadCount: 5 },
+  { id: 'alan',   displayName: 'Alan Grant',     status: 'offline', avatarInitials: 'AG', unreadCount: 0 },
+  { id: 'john',   displayName: 'John Hammond',   status: 'online',  avatarInitials: 'JH', unreadCount: 0 },
 ]
 
 function hoursAgo(h: number): Date {
@@ -25,53 +26,70 @@ function daysAgo(d: number): Date {
 }
 
 const MOCK_HISTORY: Record<string, ChatMessage[]> = {
-  alice: [
-    { id: 'a1', contactId: 'alice', direction: 'inbound', text: 'Hey! How are you doing?', timestamp: hoursAgo(2), status: 'read' },
-    { id: 'a2', contactId: 'alice', direction: 'outbound', text: 'Doing great, thanks for asking! How about yourself?', timestamp: hoursAgo(2), status: 'read' },
-    { id: 'a3', contactId: 'alice', direction: 'inbound', text: 'Pretty good! Are you coming to the all-hands tomorrow?', timestamp: minutesAgo(30), status: 'read' },
-    { id: 'a4', contactId: 'alice', direction: 'inbound', text: 'It starts at 10 am in the main boardroom.', timestamp: minutesAgo(28), status: 'delivered' },
+  ian: [
+    { id: 'i1', contactId: 'ian', direction: 'inbound',  text: 'Your scientists were so preoccupied with whether or not they could, they didn\'t stop to think if they should.', timestamp: hoursAgo(3), status: 'read' },
+    { id: 'i2', contactId: 'ian', direction: 'outbound', text: 'To be fair, the initial containment protocols did look solid on paper.', timestamp: hoursAgo(3), status: 'read' },
+    { id: 'i3', contactId: 'ian', direction: 'inbound',  text: 'Life, uh… finds a way. You cannot plan for every variable when you\'re dealing with living systems.', timestamp: minutesAgo(45), status: 'read' },
+    { id: 'i4', contactId: 'ian', direction: 'inbound',  text: 'The rex is out. Fences on sector 4 are down. I strongly suggest we revisit the evacuation plan.', timestamp: minutesAgo(20), status: 'delivered' },
   ],
-  bob: [
-    { id: 'b1', contactId: 'bob', direction: 'outbound', text: 'Hey Bob, any chance you can review my PR before EOD?', timestamp: hoursAgo(5), status: 'read' },
-    { id: 'b2', contactId: 'bob', direction: 'inbound', text: "Sure! I'll take a look this afternoon.", timestamp: hoursAgo(4), status: 'read' },
-    { id: 'b3', contactId: 'bob', direction: 'outbound', text: 'Thanks, I really appreciate it!', timestamp: hoursAgo(4), status: 'read' },
+  ellie: [
+    { id: 'e1', contactId: 'ellie', direction: 'outbound', text: 'Ellie, the dilophosaurus paddock gate won\'t latch. Can you check the hydraulic line on the east side?', timestamp: hoursAgo(5), status: 'read' },
+    { id: 'e2', contactId: 'ellie', direction: 'inbound',  text: 'On it. Also — these plants over here are Veratrum californicum. They\'re incredibly toxic. Someone on the botanical team made a serious mistake.', timestamp: hoursAgo(4), status: 'read' },
+    { id: 'e3', contactId: 'ellie', direction: 'outbound', text: 'I\'ll flag it to Hammond. Good catch.', timestamp: hoursAgo(4), status: 'read' },
+    { id: 'e4', contactId: 'ellie', direction: 'inbound',  text: 'The power is back on in the visitor centre. Alan and the kids are safe. Muldoon is securing the perimeter now.', timestamp: minutesAgo(10), status: 'read' },
   ],
-  carol: [
-    { id: 'c1', contactId: 'carol', direction: 'inbound', text: 'Hi! Can we catch up this week?', timestamp: daysAgo(1), status: 'delivered' },
-    { id: 'c2', contactId: 'carol', direction: 'inbound', text: 'I wanted to talk about the Q3 project scope.', timestamp: daysAgo(1), status: 'delivered' },
-    { id: 'c3', contactId: 'carol', direction: 'inbound', text: "Let me know when you're free.", timestamp: daysAgo(1), status: 'delivered' },
-    { id: 'c4', contactId: 'carol', direction: 'inbound', text: 'I also sent you the updated requirements doc by email.', timestamp: daysAgo(1), status: 'delivered' },
-    { id: 'c5', contactId: 'carol', direction: 'inbound', text: 'No rush, whenever you get a chance!', timestamp: daysAgo(1), status: 'delivered' },
+  dennis: [
+    { id: 'd1', contactId: 'dennis', direction: 'inbound',  text: 'I got your message. The package is ready for Dodgson. I just need the boat schedule and I\'m gone.', timestamp: daysAgo(1), status: 'delivered' },
+    { id: 'd2', contactId: 'dennis', direction: 'inbound',  text: 'Nobody move! I\'ve got a schedule to keep.', timestamp: daysAgo(1), status: 'delivered' },
+    { id: 'd3', contactId: 'dennis', direction: 'inbound',  text: 'Look, I\'ll be back before the tour returns. The systems will reset themselves in 15 minutes. No one will even notice.', timestamp: daysAgo(1), status: 'delivered' },
+    { id: 'd4', contactId: 'dennis', direction: 'inbound',  text: 'Ah ah ah… you didn\'t say the magic word.', timestamp: daysAgo(1), status: 'delivered' },
+    { id: 'd5', contactId: 'dennis', direction: 'inbound',  text: 'I\'m telling you, Dodgson, we\'ve got Dodgson here! See? Nobody cares.', timestamp: daysAgo(1), status: 'delivered' },
   ],
-  david: [],
+  alan: [],
+  john: [
+    { id: 'j1', contactId: 'john', direction: 'inbound',  text: 'Welcome to Jurassic Park. We spared no expense.', timestamp: hoursAgo(6), status: 'read' },
+    { id: 'j2', contactId: 'john', direction: 'outbound', text: 'Mr. Hammond, the security systems are offline. We need to talk about Nedry.', timestamp: hoursAgo(6), status: 'read' },
+    { id: 'j3', contactId: 'john', direction: 'inbound',  text: 'When they first brought in the dinosaurs, I felt like a god. I still believe we can make this work.', timestamp: hoursAgo(2), status: 'read' },
+    { id: 'j4', contactId: 'john', direction: 'outbound', text: 'With respect, the park is not ready. The animals have proved far more dangerous than the models predicted.', timestamp: hoursAgo(2), status: 'read' },
+    { id: 'j5', contactId: 'john', direction: 'inbound',  text: 'I don\'t blame people for their mistakes. But I do ask that they pay for them.', timestamp: minutesAgo(35), status: 'delivered' },
+  ],
 }
 
 const MOCK_REPLIES: Record<string, string[]> = {
-  alice: [
-    "Sounds good! See you there.",
-    "Yes, I'll definitely be there.",
-    "Of course! Looking forward to it.",
-    "Thanks for the heads up!",
-    "Got it, I'll block my calendar.",
+  ian: [
+    "Chaos theory. It was always going to end this way.",
+    "The system is complex. Complex systems fail in complex ways.",
+    "I'm simply saying that life… finds a way.",
+    "You've heard of the butterfly effect? This is it, playing out in real time.",
+    "Fascinating. Terrifying, but fascinating.",
   ],
-  bob: [
-    "On it — will leave comments shortly.",
-    "Looks good so far, just checking a couple more things.",
-    "Left a few suggestions, nothing major.",
-    "LGTM! Approved.",
+  ellie: [
+    "I'm on the east side now. I can restore power but I'll need a few minutes.",
+    "The raptor paddock is clear. Heading back to the visitor centre.",
+    "Alan and the kids are with me. We're all okay.",
+    "We need to get everyone to the helicopter. Now.",
+    "Agreed. I'll meet you at the emergency exit.",
   ],
-  carol: [
-    "Hey! Tuesday afternoon works well for me.",
-    "Got the email, I'll review it tonight.",
-    "How about a quick call Thursday at 2 pm?",
-    "Sounds great, let's do it!",
-    "Perfect, I'll set up a calendar invite.",
+  dennis: [
+    "Ah ah ah… you didn't say the magic word.",
+    "I've designed all the systems here. I know the park inside and out.",
+    "I could've been on the boat by now.",
+    "You'll have your money after I make the drop.",
+    "It's a Unix system! I know this.",
   ],
-  david: [
-    "Hey! What's up?",
-    "Sure thing.",
-    "No problem at all.",
-    "Happy to help!",
+  alan: [
+    "They do move in herds.",
+    "Velociraptor. You stare at him, and he just stares right back.",
+    "That's one big pile of— never mind.",
+    "Kids! They're just kids!",
+    "Hold on to your butts.",
+  ],
+  john: [
+    "We spared no expense.",
+    "All major theme parks have delays. When they opened Disneyland in 1956, nothing worked.",
+    "I really hate that man.",
+    "Creation is an act of sheer will.",
+    "Next time it'll be flawless. I promise you that.",
   ],
 }
 
