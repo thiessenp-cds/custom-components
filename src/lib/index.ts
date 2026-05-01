@@ -24,6 +24,11 @@ export type { ComboboxOption, ComboboxChangeDetail, ComboboxInputDetail } from '
 export { Combobox } from './components/combobox'
 export type { ComboboxProps } from './components/combobox'
 
+export { AppChat } from './components/chat/chat'
+export type { ChatAdapter, ChatContact, ChatMessage, ContactStatus, MessageStatus, ChatEvent } from './components/chat/chat'
+export { Chat, MockChatAdapter } from './components/chat'
+export type { ChatProps } from './components/chat'
+
 // ── Combobox with fallback select ─────────────────────────────────────────────
 export { AppComboboxFallbackSelect } from './components/combobox-fallback-select/combobox-fallback-select'
 

@@ -67,6 +67,16 @@ declare module 'react' {
         /** Error message; when set applies red border and shows message below the label */
         error?: string
       }
+
+      /**
+       * <app-chat> — Generic accessible chat UI.
+       * Adapter is set via the JS property `adapter`, not an HTML attribute.
+       * Registered by: src/lib/components/chat/chat.ts
+       */
+      'app-chat': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      >
     }
   }
 }
