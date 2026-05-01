@@ -5,6 +5,7 @@ import '../styles/page.css'
 
 export default function ChatPage() {
   // A stable adapter instance for the lifetime of this page.
+  // In a real app, you might create an adapter that connects to a real backend here.
   const adapter = useMemo(() => new MockChatAdapter(), [])
 
   return (

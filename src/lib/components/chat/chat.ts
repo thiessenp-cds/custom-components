@@ -18,6 +18,23 @@ export type {
   ChatEvent,
 } from './chat-adapter'
 
+// -- Notes
+
+/**
+For the Chat message list Why use `role="log"` for the messages container instead of a semantic list (`<ol>`)?
+The key difference is live region behaviour. `role="log"` is a built-in ARIA live region (implicitly `aria-live="polite"` + `aria-relevant="additions text"`). That means screen readers automatically announce new messages as they arrive — without the user having to navigate to them. That's the primary accessibility requirement for a chat UI.
+An `<ol>` is purely structural. It would require you to *add* `aria-live="polite"` to it yourself to get the same behaviour. At that point you've hand-rolled what `role="log"` provides natively.
+Where `<ol>` would win:
+- It announces "list, N items" when the user enters it, which gives a sense of scale.
+- Users can jump item-by-item with the virtual cursor in a screen reader.
+Why that's less useful here:
+- Announcing "list, 47 items" on every new message arrival would be noisy.
+- Chat history is typically browsed by scrolling, not by item-jumping.
+- The WAI-ARIA spec calls out chat logs as the canonical example for `role="log"`.
+A hybrid approach** — `role="log"` on the scroll container, with each message as a `<div>` (no list role) — is what most production chat apps (and the ARIA Authoring Practices Guide) use. That's what the current implementation does.
+If a new "message history" view (read-only, navigable archive) was added, then an `<ol>` without a live region would be the right choice there.
+*/
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 /**
@@ -58,6 +75,16 @@ export class AppChat extends CustomElement {
   private _unsubscribe: (() => void) | null = null
   /** Incremented on every _cleanup() so in-flight _init() calls can detect they are stale. */
   private _initGen = 0
+  /**
+   * Tracks which contacts have had their full history fetched via getMessages.
+   * Separate from _messages.has() so that inbound messages arriving before the
+   * first visit don't suppress the full history load.
+   */
+  private _historyLoaded = new Set<string>()
+  /** Incremented on each _selectContact call to cancel stale async completions. */
+  private _selectingGen = 0
+  /** The contact currently highlighted by the keyboard cursor in the contact listbox. */
+  private _focusedContactId: string | null = null
   private readonly _uid: string
 
   // ── DOM refs ───────────────────────────────────────────────────────────────
@@ -113,7 +140,8 @@ export class AppChat extends CustomElement {
   private _cleanup(): void {
     this._unsubscribe?.()
     this._unsubscribe = null
-    this._initGen++  // invalidate any pending _init
+    this._initGen++     // invalidate any pending _init
+    this._historyLoaded.clear()
   }
 
   private async _init(adapter: ChatAdapter): Promise<void> {
@@ -156,6 +184,7 @@ export class AppChat extends CustomElement {
             role="listbox"
             aria-label="Contacts"
             aria-orientation="vertical"
+            tabindex="0"
           ></ul>
         </aside>
 
@@ -232,6 +261,15 @@ export class AppChat extends CustomElement {
       this._renderContactList()
     })
 
+    // When focus enters the listbox, ensure aria-activedescendant is always set.
+    this._contactListEl.addEventListener('focus', () => {
+      const target = this._focusedContactId ?? this._selectedContactId ?? this._contacts[0]?.id ?? null
+      if (target) this._setActivedescendant(target)
+    })
+
+    // All keyboard navigation for the contact list is handled on the container.
+    this._contactListEl.addEventListener('keydown', (e: KeyboardEvent) => this._handleListboxKeydown(e))
+
     this._sendBtnEl.addEventListener('click', () => this._handleSend())
 
     this._composeEl.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -277,13 +315,10 @@ export class AppChat extends CustomElement {
     total: number,
   ): HTMLLIElement {
     const li = document.createElement('li')
+    li.id = this._contactOptionId(contact.id)
     li.className = 'chat__contact-item'
     li.setAttribute('role', 'option')
     li.setAttribute('aria-selected', String(contact.id === this._selectedContactId))
-    // Roving tabindex: selected item (or first if none selected) gets tabindex=0.
-    const isFirstFocusable =
-      contact.id === this._selectedContactId || (index === 0 && !this._selectedContactId)
-    li.setAttribute('tabindex', isFirstFocusable ? '0' : '-1')
     li.setAttribute('aria-setsize', String(total))
     li.setAttribute('aria-posinset', String(index + 1))
     li.dataset.contactId = contact.id
@@ -326,50 +361,90 @@ export class AppChat extends CustomElement {
     li.appendChild(info)
     li.appendChild(badge)
 
-    li.addEventListener('click', () => void this._selectContact(contact.id))
-    li.addEventListener('keydown', (e: KeyboardEvent) => this._handleContactKeydown(e, li))
+    // Click: update the active-descendant, select, move focus to compose.
+    // All other keyboard handling is on the listbox container itself.
+    li.addEventListener('click', () => void this._selectContact(contact.id, true))
 
     return li
   }
 
-  private _handleContactKeydown(e: KeyboardEvent, li: HTMLLIElement): void {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      const id = li.dataset.contactId
-      if (id) void this._selectContact(id)
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      this._shiftFocus(li, 1)
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      this._shiftFocus(li, -1)
-    } else if (e.key === 'Home') {
-      e.preventDefault()
-      this._focusContactAt(0)
-    } else if (e.key === 'End') {
-      e.preventDefault()
-      this._focusContactAt(-1)
+  private _contactOptionId(contactId: string): string {
+    return `${this._uid}-contact-${contactId}`
+  }
+
+  /**
+   * Update `aria-activedescendant` on the listbox and apply the visual
+   * keyboard-cursor indicator to the corresponding option element.
+   */
+  private _setActivedescendant(contactId: string | null): void {
+    this._contactListEl.querySelectorAll<HTMLElement>('.chat__contact-item--focused')
+      .forEach(el => el.classList.remove('chat__contact-item--focused'))
+
+    this._focusedContactId = contactId
+
+    if (contactId) {
+      const optId = this._contactOptionId(contactId)
+      this._contactListEl.setAttribute('aria-activedescendant', optId)
+      const el = this.shadow.getElementById(optId)
+      if (el) {
+        el.classList.add('chat__contact-item--focused')
+        el.scrollIntoView({ block: 'nearest' })
+      }
+    } else {
+      this._contactListEl.removeAttribute('aria-activedescendant')
     }
   }
 
-  private _shiftFocus(current: HTMLElement, delta: 1 | -1): void {
-    const items = this._contactOptions()
-    const idx = items.indexOf(current)
-    const next = items[idx + delta]
-    if (next) this._focusOption(items, next)
-  }
-
-  private _focusContactAt(index: number): void {
+  /**
+   * Keyboard handler on the listbox container.
+   *
+   * Uses "selection follows focus": arrow keys immediately load the adjacent
+   * conversation but keep focus on the listbox.  Enter/Space confirm the
+   * selection and move focus to the compose area.
+   */
+  private _handleListboxKeydown(e: KeyboardEvent): void {
     const items = this._contactOptions()
     if (items.length === 0) return
-    const target = index === -1 ? items[items.length - 1] : items[index]
-    this._focusOption(items, target)
-  }
 
-  private _focusOption(items: HTMLElement[], target: HTMLElement): void {
-    items.forEach(i => i.setAttribute('tabindex', '-1'))
-    target.setAttribute('tabindex', '0')
-    target.focus()
+    const currentId = this._focusedContactId ?? this._selectedContactId
+    const currentIndex = currentId
+      ? items.findIndex(el => el.dataset.contactId === currentId)
+      : -1
+
+    switch (e.key) {
+      case 'ArrowDown': {
+        e.preventDefault()
+        const next = items[Math.min(currentIndex + 1, items.length - 1)]
+        const nextId = next?.dataset.contactId
+        if (nextId) void this._selectContact(nextId, false)
+        break
+      }
+      case 'ArrowUp': {
+        e.preventDefault()
+        const prev = items[Math.max(currentIndex - 1, 0)]
+        const prevId = prev?.dataset.contactId
+        if (prevId) void this._selectContact(prevId, false)
+        break
+      }
+      case 'Home': {
+        e.preventDefault()
+        const firstId = items[0]?.dataset.contactId
+        if (firstId) void this._selectContact(firstId, false)
+        break
+      }
+      case 'End': {
+        e.preventDefault()
+        const lastId = items[items.length - 1]?.dataset.contactId
+        if (lastId) void this._selectContact(lastId, false)
+        break
+      }
+      case 'Enter':
+      case ' ': {
+        e.preventDefault()
+        if (this._focusedContactId) void this._selectContact(this._focusedContactId, true)
+        break
+      }
+    }
   }
 
   private _contactOptions(): HTMLElement[] {
@@ -378,15 +453,17 @@ export class AppChat extends CustomElement {
 
   // ── Select a contact ───────────────────────────────────────────────────────
 
-  private async _selectContact(contactId: string): Promise<void> {
+  private async _selectContact(contactId: string, focusCompose = true): Promise<void> {
+    const gen = ++this._selectingGen
+    const isNewContact = this._selectedContactId !== contactId
     this._selectedContactId = contactId
 
-    // Reflect new selection in the contact list.
+    // Update aria-selected on all options and sync the virtual cursor.
+    // Both happen synchronously (before any awaits) so the UI responds immediately.
     this._contactListEl.querySelectorAll<HTMLElement>('[role="option"]').forEach(item => {
-      const selected = item.dataset.contactId === contactId
-      item.setAttribute('aria-selected', String(selected))
-      item.setAttribute('tabindex', selected ? '0' : '-1')
+      item.setAttribute('aria-selected', String(item.dataset.contactId === contactId))
     })
+    this._setActivedescendant(contactId)
 
     // Show the chat panel.
     this._emptyStateEl.hidden = true
@@ -406,19 +483,34 @@ export class AppChat extends CustomElement {
       if (label) label.textContent = `Message ${contact.displayName}`
     }
 
-    // Reset compose.
-    this._composeEl.disabled = false
-    this._composeEl.value = ''
-    this._sendBtnEl.disabled = true
-
-    // Clear typing indicator left over from previous contact.
-    this._typingEl.textContent = ''
-
-    // Load messages on first visit.
-    if (!this._messages.has(contactId) && this._adapter) {
-      const msgs = await this._adapter.getMessages(contactId)
-      this._messages.set(contactId, msgs)
+    // Only reset the compose area when genuinely switching contacts so that
+    // any in-progress text is preserved if the user clicks the same contact.
+    if (isNewContact) {
+      this._composeEl.disabled = false
+      this._composeEl.value = ''
+      this._sendBtnEl.disabled = true
+      // Clear the typing indicator left over from the previous contact.
+      this._typingEl.textContent = ''
     }
+
+    // Load messages on first visit.  Guard with _historyLoaded (not _messages.has)
+    // so that inbound messages arriving before the first selection don't suppress
+    // the full history fetch from the adapter.
+    if (!this._historyLoaded.has(contactId) && this._adapter) {
+      const msgs = await this._adapter.getMessages(contactId)
+      // Another contact was selected while we were waiting — bail out.
+      if (gen !== this._selectingGen) return
+      // Merge adapter history with any inbound messages that arrived during the fetch.
+      const pending = this._messages.get(contactId) ?? []
+      const seen = new Set(msgs.map(m => m.id))
+      const merged = [...msgs, ...pending.filter(m => !seen.has(m.id))]
+      merged.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+      this._messages.set(contactId, merged)
+      this._historyLoaded.add(contactId)
+    }
+
+    // Bail if another selection won the race.
+    if (gen !== this._selectingGen) return
 
     this._renderMessages(contactId)
 
@@ -428,7 +520,9 @@ export class AppChat extends CustomElement {
       this._updateContactBadge(contactId, 0)
     }
 
-    this._composeEl.focus()
+    if (focusCompose) {
+      this._composeEl.focus()
+    }
   }
 
   // ── Messages ───────────────────────────────────────────────────────────────
@@ -436,6 +530,16 @@ export class AppChat extends CustomElement {
   private _renderMessages(contactId: string): void {
     const msgs = this._messages.get(contactId) ?? []
     this._messagesEl.innerHTML = ''
+    if (msgs.length === 0) {
+      const contact = this._contacts.find(c => c.id === contactId)
+      const first = contact?.displayName.split(' ')[0] ?? 'this contact'
+      const hint = document.createElement('p')
+      hint.className = 'chat__new-chat-hint'
+      hint.setAttribute('aria-live', 'polite')
+      hint.textContent = `This is the beginning of your conversation with ${first}. Send a message to get started.`
+      this._messagesEl.appendChild(hint)
+      return
+    }
     for (const msg of msgs) {
       this._messagesEl.appendChild(this._createMessageEl(msg))
     }
@@ -443,6 +547,8 @@ export class AppChat extends CustomElement {
   }
 
   private _appendMessage(msg: ChatMessage): void {
+    // Remove the new-chat hint the moment the first message appears.
+    this._messagesEl.querySelector('.chat__new-chat-hint')?.remove()
     this._messagesEl.appendChild(this._createMessageEl(msg))
     this._scrollToBottom()
   }
@@ -682,7 +788,7 @@ export class AppChat extends CustomElement {
       case 'sending':   return { icon: '\u25CB', label: 'Sending' }
       case 'sent':      return { icon: '\u2713', label: 'Sent' }
       case 'delivered': return { icon: '\u2713\u2713', label: 'Delivered' }
-      case 'read':      return { icon: '\u2713\u2713', label: 'Read' }
+      case 'read':      return { icon: '\u2714\u2714', label: 'Read' }
     }
   }
 

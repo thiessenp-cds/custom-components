@@ -114,9 +114,18 @@
   border-left-color: var(--gcds-color-blue-dark, #0535d2);
 }
 
-.chat__contact-item:focus-visible {
+/* Listbox focus ring — shown on the container when it has keyboard focus */
+.chat__contact-list:focus-visible {
   outline: var(--gcds-focus-outline-width, 3px) solid var(--gcds-focus-outline-color, #0535d2);
   outline-offset: -2px;
+  border-radius: 2px;
+}
+
+/* Keyboard cursor position — the aria-activedescendant target */
+.chat__contact-item--focused {
+  background: rgba(5, 53, 210, 0.06);
+  outline: 2px solid var(--gcds-focus-outline-color, #0535d2);
+  outline-offset: -3px;
 }
 
 /* ── Avatar ──────────────────────────────────────────────────────────────────── */
@@ -176,8 +185,8 @@
 }
 
 .chat__contact-status-label--online  { color: #1b8a2a; }
-.chat__contact-status-label--away    { color: #b45309; }
-.chat__contact-status-label--offline { color: #9ca3af; }
+.chat__contact-status-label--away    { color: #7c4a00; }
+.chat__contact-status-label--offline { color: #595959; }
 
 /* ── Unread badge ────────────────────────────────────────────────────────────── */
 
@@ -204,6 +213,21 @@
   font-size: 0.875rem;
   color: var(--gcds-text-secondary, #666);
   text-align: center;
+}
+
+/* ── New-chat hint ───────────────────────────────────────────────────────────── */
+
+.chat__new-chat-hint {
+  margin: auto;
+  max-width: 22rem;
+  padding: var(--gcds-spacing-300, 0.75rem) var(--gcds-spacing-400, 1rem);
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--gcds-text-secondary, #595959);
+  background: var(--gcds-bg-overlay, #f5f5f5);
+  border: var(--gcds-border-width-sm, 1px) solid var(--gcds-border-light, #b2b8be);
+  border-radius: var(--gcds-border-radius-sm, 4px);
+  line-height: 1.5;
 }
 
 /* ── Main area ───────────────────────────────────────────────────────────────── */
@@ -300,6 +324,12 @@
   scroll-behavior: smooth;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .chat__messages {
+    scroll-behavior: auto;
+  }
+}
+
 /* ── Individual message ──────────────────────────────────────────────────────── */
 
 .chat__msg {
@@ -347,7 +377,7 @@
 
 .chat__msg-time {
   font-size: 0.6875rem;
-  color: var(--gcds-text-secondary, #777);
+  color: #595959;
 }
 
 /* ── Message delivery status ─────────────────────────────────────────────────── */
@@ -358,9 +388,9 @@
   line-height: 1;
 }
 
-.chat__msg-status--sending   { color: #9ca3af; }
-.chat__msg-status--sent      { color: var(--gcds-text-secondary, #777); }
-.chat__msg-status--delivered { color: var(--gcds-text-secondary, #555); }
+.chat__msg-status--sending   { color: #595959; }
+.chat__msg-status--sent      { color: #595959; }
+.chat__msg-status--delivered { color: #333333; }
 .chat__msg-status--read      { color: var(--gcds-color-blue-dark, #0535d2); }
 
 /* ── Typing indicator ────────────────────────────────────────────────────────── */
@@ -419,8 +449,8 @@
 
 .chat__send-btn {
   flex-shrink: 0;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border: none;
   border-radius: var(--gcds-border-radius-sm, 4px);
   background: var(--gcds-color-blue-dark, #0535d2);

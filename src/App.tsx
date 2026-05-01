@@ -15,9 +15,9 @@ interface ComponentEntry {
 }
 
 const components: ComponentEntry[] = [
+  { name: 'Chat', path: 'chat', description: 'Generic chat UI with a swappable service adapter. Supports typing indicators, delivery status, unread badges, and contact search.' },  
   { name: 'Combobox', path: 'combobox', description: 'Accessible combobox with type-to-filter autocomplete. Most tested method across industry (gov.uk, APG..) but has iOS limitations)' },
   { name: 'Combobox with fallback select', path: 'combobox-fallback-select', description: 'Combobox on desktop; native select on mobile. More reliable but looses some UX on very large lists.' },
-  { name: 'Chat', path: 'chat', description: 'Generic chat UI with a swappable service adapter. Supports typing indicators, delivery status, unread badges, and contact search.' },
 ]
 
 // ── Layout ────────────────────────────────────────────
