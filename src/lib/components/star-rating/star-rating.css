@@ -1,0 +1,150 @@
+/*
+ * star-rating.css — shadow DOM styles for <app-star-rating>
+ *
+ * Follows the same GCDS token conventions as combobox.css.
+ * @keyframes are scoped to this shadow root via Constructable Stylesheets.
+ */
+
+/* ── Token bridge ────────────────────────────────────────────────────────────── */
+:host {
+  --gcds-text-primary:   #333333;
+  --gcds-text-secondary: #595959;
+  --gcds-danger-text:    #b3192e;
+  --gcds-focus-color:    #1354ec;
+
+  display: block;
+  font-family: 'Noto Sans', sans-serif;
+  font-size: inherit;
+}
+
+/* ── Screen-reader only utility ──────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Wrapper ─────────────────────────────────────────────────────────────────── */
+.star-rating {
+  margin-bottom: 1.5rem;
+}
+
+/* ── Label ───────────────────────────────────────────────────────────────────── */
+.star-rating__label {
+  display: block;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--gcds-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.star-rating__required {
+  font-weight: 400;
+  color: var(--gcds-text-primary);
+}
+
+/* ── Hint ────────────────────────────────────────────────────────────────────── */
+.star-rating__hint {
+  font-size: 1rem;
+  color: var(--gcds-text-secondary);
+  margin: -0.25rem 0 0.5rem;
+  line-height: 1.5;
+}
+
+/* ── Error ───────────────────────────────────────────────────────────────────── */
+.star-rating__error {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gcds-danger-text);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  line-height: 1.5;
+}
+
+.star-rating__error::before {
+  content: '⚠';
+  flex-shrink: 0;
+}
+
+/* ── Stars container ─────────────────────────────────────────────────────────── */
+.star-rating__stars {
+  display: flex;
+  gap: 0.25rem;
+}
+
+/* ── Star label ──────────────────────────────────────────────────────────────── */
+.star-rating__star-label {
+  position: relative;
+  cursor: pointer;
+  font-size: 2.25rem; /* ~36px */
+  line-height: 1;
+  user-select: none;
+  border-radius: 0.125rem;
+}
+
+/* Focus ring — applied via JS when the hidden input is :focus-visible */
+.star-rating__star-label--focused {
+  outline: 3px solid var(--gcds-focus-color);
+  outline-offset: 2px;
+}
+
+/* ── Star glyph ──────────────────────────────────────────────────────────────── */
+.star-rating__glyph {
+  display: block;
+  color: #d1d5db; /* inactive — gray-300 */
+}
+
+.star-rating__glyph--active {
+  color: #facc15; /* active / hovered — yellow-400 */
+}
+
+/* ── Sparkle particles ───────────────────────────────────────────────────────── */
+
+/* Particles are always in the DOM but hidden by default */
+.star-particle {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 0.45em;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Per-particle direction vectors */
+.star-particle--1 { --tx: -20px; --ty: -22px; }
+.star-particle--2 { --tx: 0px;   --ty: -28px; }
+.star-particle--3 { --tx: 22px;  --ty: -20px; }
+.star-particle--4 { --tx: 26px;  --ty:  10px; }
+.star-particle--5 { --tx: 0px;   --ty:  28px; }
+.star-particle--6 { --tx: -26px; --ty:  10px; }
+
+@keyframes star-particle {
+  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--tx, 0px)), calc(-50% + var(--ty, 0px))) scale(0); opacity: 0; }
+}
+
+/* Only animate when reduced-motion is not preferred */
+@media (prefers-reduced-motion: no-preference) {
+  .star-rating__star-label--sparkle .star-particle {
+    display: block;
+    animation: star-particle 500ms ease-out forwards;
+  }
+
+  /* Stagger each particle so they feel less mechanical */
+  .star-rating__star-label--sparkle .star-particle--2 { animation-delay: 30ms; }
+  .star-rating__star-label--sparkle .star-particle--3 { animation-delay: 15ms; }
+  .star-rating__star-label--sparkle .star-particle--4 { animation-delay: 25ms; }
+  .star-rating__star-label--sparkle .star-particle--5 { animation-delay: 10ms; }
+  .star-rating__star-label--sparkle .star-particle--6 { animation-delay: 20ms; }
+}

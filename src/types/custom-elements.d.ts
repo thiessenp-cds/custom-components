@@ -77,6 +77,28 @@ declare module 'react' {
         React.HTMLAttributes<HTMLElement>,
         HTMLElement
       >
+
+      /**
+       * <app-star-rating> — Accessible star rating input (WAI-ARIA radiogroup).
+       * Registered by: src/lib/components/star-rating/star-rating.ts
+       */
+      'app-star-rating': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        /** Visible label text */
+        label?: string
+        /** Hint / description text */
+        hint?: string
+        /** Form field name */
+        name?: string
+        /** Marks as required; pass empty string for boolean true */
+        required?: string
+        /** Error message */
+        error?: string
+        /** Currently selected value ("1"–"5") */
+        value?: string
+      }
     }
   }
 }

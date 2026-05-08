@@ -18,6 +18,8 @@ export { CustomElement } from './CustomElement'
 
 // ── Registered components ─────────────────────────────────────────────────────
 export { AppCombobox } from './components/combobox/combobox'
+export { AppStarRating } from './components/star-rating/star-rating'
+export type { StarRatingChangeDetail } from './components/star-rating/star-rating'
 export type { ComboboxOption, ComboboxChangeDetail, ComboboxInputDetail } from './components/combobox/combobox'
 
 // React wrappers

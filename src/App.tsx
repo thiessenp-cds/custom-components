@@ -4,6 +4,7 @@ import ComboboxPage from './pages/ComboboxPage'
 import ComboboxReactPage from './pages/ComboboxReactPage'
 import ComboboxFallbackSelectPage from './pages/ComboboxFallbackSelectPage'
 import ChatPage from './pages/ChatPage'
+import StarRatingPage from './pages/StarRatingPage'
 import './App.css'
 
 // ── Component registry ────────────────────────────────
@@ -18,6 +19,7 @@ const components: ComponentEntry[] = [
   { name: 'Chat', path: 'chat', description: 'Generic chat UI with a swappable service adapter. Supports typing indicators, delivery status, unread badges, and contact search.' },  
   { name: 'Combobox', path: 'combobox', description: 'Accessible combobox with type-to-filter autocomplete. Most tested method across industry (gov.uk, APG..) but has iOS limitations)' },
   { name: 'Combobox with fallback select', path: 'combobox-fallback-select', description: 'Combobox on desktop; native select on mobile. More reliable but looses some UX on very large lists.' },
+  { name: 'Star Rating', path: 'star-rating', description: 'Accessible star rating input using the WAI-ARIA radiogroup pattern. Roving tabindex, arrow-key navigation, hover highlighting, and sparkle animation on selection.' },
 ]
 
 // ── Layout ────────────────────────────────────────────
@@ -99,6 +101,7 @@ export default function App() {
         <Route path="/combobox/react" element={<ComboboxReactPage />} />
         <Route path="/combobox-fallback-select" element={<ComboboxFallbackSelectPage />} />
         <Route path="/chat" element={<ChatPage />} />
+        <Route path="/star-rating" element={<StarRatingPage />} />
       </Routes>
     </HashRouter>
   )
