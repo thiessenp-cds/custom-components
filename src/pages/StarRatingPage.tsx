@@ -68,6 +68,7 @@ export default function StarRatingPage() {
         An accessible star rating input using the WAI-ARIA radiogroup pattern. Roving
         tabindex, arrow-key navigation, hover highlighting, and a sparkle animation on
         selection (respects <code>prefers-reduced-motion</code>).
+        See <a href="https://www.w3.org/WAI/ARIA/apg/patterns/radio/examples/radio-rating/">W3C Star Radio example</a>.
       </p>
 
       <Section title="Default">
