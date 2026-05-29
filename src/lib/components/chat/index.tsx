@@ -14,6 +14,8 @@ export type {
 } from './chat-adapter'
 
 export { MockChatAdapter } from './mock-chat-adapter'
+export { AppSyncChatAdapter } from './appsync-chat-adapter'
+export { isAppSyncConfigured } from './appsync-config'
 
 // ── React wrapper ─────────────────────────────────────────────────────────────
 

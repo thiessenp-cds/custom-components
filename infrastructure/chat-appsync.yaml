@@ -1,0 +1,242 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Custom Components Chat Demo — AppSync + DynamoDB + Cognito Identity Pool.
+  Provides a real-time, persistent group-chat backend for the <app-chat> workbench demo.
+  All browser clients authenticate as unauthenticated Cognito Identity Pool users.
+
+Parameters:
+  StackPrefix:
+    Type: String
+    Default: custom-components-chat
+    Description: Prefix for all resource names (must be unique within your account/region)
+
+Resources:
+
+  # ── DynamoDB ──────────────────────────────────────────────────────────────────
+  # PK: roomId   — partition key (e.g. "global")
+  # SK: sk       — sort key in the form "<ISO-timestamp>#<uuid>" for time-ordered queries
+
+  ChatMessagesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${StackPrefix}-messages"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: roomId
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: roomId
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  # ── Cognito Identity Pool (unauthenticated / guest access) ────────────────────
+
+  ChatIdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: !Sub "${StackPrefix}-identity-pool"
+      AllowUnauthenticatedIdentities: true
+
+  # IAM role assumed by unauthenticated browser clients
+  ChatUnauthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${StackPrefix}-unauth-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                "cognito-identity.amazonaws.com:aud": !Ref ChatIdentityPool
+              "ForAnyValue:StringLike":
+                "cognito-identity.amazonaws.com:amr": unauthenticated
+      Policies:
+        - PolicyName: AppSyncGraphQL
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: appsync:GraphQL
+                # Grants access to all fields — scope down for production
+                Resource: !Sub "arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:apis/${ChatApi.ApiId}/types/*/fields/*"
+
+  ChatIdentityPoolRoles:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref ChatIdentityPool
+      Roles:
+        unauthenticated: !GetAtt ChatUnauthRole.Arn
+
+  # ── AppSync API ───────────────────────────────────────────────────────────────
+
+  ChatApi:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: !Sub "${StackPrefix}-api"
+      AuthenticationType: AWS_IAM
+
+  ChatApiSchema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId: !GetAtt ChatApi.ApiId
+      Definition: |
+        type Message {
+          id: ID!
+          roomId: String!
+          senderId: String!
+          senderName: String!
+          text: String!
+          createdAt: AWSDateTime!
+        }
+
+        type MessageConnection {
+          items: [Message]
+          nextToken: String
+        }
+
+        type Query {
+          listMessages(roomId: String!, limit: Int, nextToken: String): MessageConnection
+        }
+
+        type Mutation {
+          sendMessage(
+            id: ID!
+            roomId: String!
+            senderId: String!
+            senderName: String!
+            text: String!
+            createdAt: AWSDateTime!
+          ): Message
+        }
+
+        type Subscription {
+          onNewMessage(roomId: String!): Message
+            @aws_subscribe(mutations: ["sendMessage"])
+        }
+
+        schema {
+          query: Query
+          mutation: Mutation
+          subscription: Subscription
+        }
+
+  # ── IAM role allowing AppSync to call DynamoDB ────────────────────────────────
+
+  AppSyncDynamoDBRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${StackPrefix}-appsync-ddb-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: appsync.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                Resource: !GetAtt ChatMessagesTable.Arn
+
+  # ── AppSync Data Source ───────────────────────────────────────────────────────
+
+  ChatDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt ChatApi.ApiId
+      Name: ChatMessagesTable
+      Type: AMAZON_DYNAMODB
+      DynamoDBConfig:
+        TableName: !Ref ChatMessagesTable
+        AwsRegion: !Ref AWS::Region
+      ServiceRoleArn: !GetAtt AppSyncDynamoDBRole.Arn
+
+  # ── AppSync Resolvers (VTL) ───────────────────────────────────────────────────
+  # Both resolvers depend on the schema being deployed first.
+
+  SendMessageResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: ChatApiSchema
+    Properties:
+      ApiId: !GetAtt ChatApi.ApiId
+      TypeName: Mutation
+      FieldName: sendMessage
+      DataSourceName: !GetAtt ChatDataSource.Name
+      RequestMappingTemplate: |
+        {
+          "version": "2017-02-28",
+          "operation": "PutItem",
+          "key": {
+            "roomId": $util.dynamodb.toDynamoDBJson($ctx.args.roomId),
+            "sk": $util.dynamodb.toDynamoDBJson("$ctx.args.createdAt#$ctx.args.id")
+          },
+          "attributeValues": {
+            "id":         $util.dynamodb.toDynamoDBJson($ctx.args.id),
+            "senderId":   $util.dynamodb.toDynamoDBJson($ctx.args.senderId),
+            "senderName": $util.dynamodb.toDynamoDBJson($ctx.args.senderName),
+            "text":       $util.dynamodb.toDynamoDBJson($ctx.args.text),
+            "createdAt":  $util.dynamodb.toDynamoDBJson($ctx.args.createdAt),
+            "roomId":     $util.dynamodb.toDynamoDBJson($ctx.args.roomId)
+          }
+        }
+      ResponseMappingTemplate: |
+        $util.toJson($ctx.result)
+
+  ListMessagesResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: ChatApiSchema
+    Properties:
+      ApiId: !GetAtt ChatApi.ApiId
+      TypeName: Query
+      FieldName: listMessages
+      DataSourceName: !GetAtt ChatDataSource.Name
+      RequestMappingTemplate: |
+        {
+          "version": "2017-02-28",
+          "operation": "Query",
+          "query": {
+            "expression": "roomId = :roomId",
+            "expressionValues": {
+              ":roomId": $util.dynamodb.toDynamoDBJson($ctx.args.roomId)
+            }
+          },
+          "scanIndexForward": true,
+          "limit": $util.defaultIfNull($ctx.args.limit, 50)
+          #if($ctx.args.nextToken)
+          ,"nextToken": "$ctx.args.nextToken"
+          #end
+        }
+      ResponseMappingTemplate: |
+        {
+          "items": $util.toJson($ctx.result.items),
+          "nextToken": $util.toJson($ctx.result.nextToken)
+        }
+
+# ── Outputs ───────────────────────────────────────────────────────────────────
+# Copy these three values into src/lib/components/chat/appsync-config.ts
+
+Outputs:
+  AppSyncEndpoint:
+    Description: "Paste into appsync-config.ts → endpoint"
+    Value: !GetAtt ChatApi.GraphQLUrl
+
+  IdentityPoolId:
+    Description: "Paste into appsync-config.ts → identityPoolId"
+    Value: !Ref ChatIdentityPool
+
+  Region:
+    Description: "Paste into appsync-config.ts → region"
+    Value: !Ref AWS::Region
