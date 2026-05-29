@@ -35,9 +35,3 @@ export { AppDatePicker } from './components/date-picker/date-picker'
 export type { DateChangeDetail } from './components/date-picker/date-picker'
 export { DatePicker } from './components/date-picker'
 export type { DatePickerProps } from './components/date-picker'
-
-// ── Combobox with fallback select ─────────────────────────────────────────────
-export { AppComboboxFallbackSelect } from './components/combobox-fallback-select/combobox-fallback-select'
-
-export { ComboboxFallbackSelect } from './components/combobox-fallback-select'
-export type { ComboboxFallbackSelectProps } from './components/combobox-fallback-select'

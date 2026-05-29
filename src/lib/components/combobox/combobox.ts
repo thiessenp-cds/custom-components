@@ -1,6 +1,6 @@
 import { CustomElement } from '../../CustomElement'
 import styles from './combobox.css?inline'
-import fallbackStyles from '../combobox-fallback-select/combobox-fallback-select.css?inline'
+import fallbackStyles from './combobox-fallback-select.css?inline'
 import {
   parseOptionsFromAttr,
   parseOptionsFromChildren,
