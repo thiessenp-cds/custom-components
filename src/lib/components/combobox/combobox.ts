@@ -645,4 +645,6 @@ export class AppCombobox extends CustomElement {
   }
 }
 
-customElements.define('app-combobox', AppCombobox)
+if (!customElements.get('app-combobox')) {
+  customElements.define('app-combobox', AppCombobox)
+}

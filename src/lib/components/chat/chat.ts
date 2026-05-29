@@ -807,4 +807,6 @@ export class AppChat extends CustomElement {
   }
 }
 
-customElements.define('app-chat', AppChat)
+if (!customElements.get('app-chat')) {
+  customElements.define('app-chat', AppChat)
+}

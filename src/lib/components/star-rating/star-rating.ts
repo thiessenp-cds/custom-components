@@ -430,4 +430,6 @@ export class AppStarRating extends CustomElement {
   }
 }
 
-customElements.define('app-star-rating', AppStarRating)
+if (!customElements.get('app-star-rating')) {
+  customElements.define('app-star-rating', AppStarRating)
+}

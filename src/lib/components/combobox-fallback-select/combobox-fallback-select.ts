@@ -852,4 +852,6 @@ export class AppComboboxFallbackSelect extends CustomElement {
   }
 }
 
-customElements.define('app-combobox-fallback-select', AppComboboxFallbackSelect)
+if (!customElements.get('app-combobox-fallback-select')) {
+  customElements.define('app-combobox-fallback-select', AppComboboxFallbackSelect)
+}

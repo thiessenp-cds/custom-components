@@ -99,6 +99,34 @@ declare module 'react' {
         /** Currently selected value ("1"–"5") */
         value?: string
       }
+
+      /**
+       * <app-date-picker> — Accessible date picker dialog (W3C APG pattern).
+       * Registered by: src/lib/components/date-picker/date-picker.ts
+       */
+      'app-date-picker': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        /** Visible label text */
+        label?: string
+        /** Hint text */
+        hint?: string
+        /** Form field name */
+        name?: string
+        /** Selected ISO date (YYYY-MM-DD) */
+        value?: string
+        /** Marks as required */
+        required?: boolean
+        /** Disables the control */
+        disabled?: boolean
+        /** Validation error message */
+        error?: string
+        /** Earliest selectable date (YYYY-MM-DD) */
+        min?: string
+        /** Latest selectable date (YYYY-MM-DD) */
+        max?: string
+      }
     }
   }
 }

@@ -1,0 +1,476 @@
+/*
+ * date-picker.css — shadow DOM styles for <app-date-picker>
+ *
+ * Follows GCDS (Government of Canada Design System) visual language.
+ * Pattern: W3C APG Date Picker Dialog
+ * https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/
+ */
+
+/* ── Token bridge ────────────────────────────────────────────────────────────── */
+
+:host {
+  /* Colours */
+  --gcds-text-primary:     #333333;
+  --gcds-text-secondary:   #595959;
+  --gcds-text-disabled:    #808080;
+  --gcds-bg-white:         #ffffff;
+  --gcds-border-default:   #8c8c8c;
+  --gcds-border-radius-sm: 0.125rem;
+  --gcds-border-radius-md: 0.375rem;
+  --gcds-border-width-md:  0.125rem;
+  --gcds-border-width-lg:  0.25rem;
+  --gcds-danger-border:    #b3192e;
+  --gcds-danger-text:      #b3192e;
+  --gcds-focus-color:      #1354ec;
+  --gcds-focus-shadow:     0 0 0 0.125rem #ffffff;
+  --gcds-disabled-bg:      #d9d9d9;
+  --gcds-blue-dark:        #0535d2;
+  --gcds-blue-hover:       #0c2a6e;
+
+  display: block;
+  font-family: 'Noto Sans', sans-serif;
+  font-size: inherit;
+}
+
+/* ── Utilities ───────────────────────────────────────────────────────────────── */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Root wrapper ────────────────────────────────────────────────────────────── */
+
+.dp {
+  position: relative;
+  max-width: 28rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Label ───────────────────────────────────────────────────────────────────── */
+
+.dp__label {
+  display: block;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--gcds-text-primary);
+  margin-bottom: 0.5rem;
+  cursor: default;
+}
+
+.dp__required {
+  font-weight: 400;
+  margin-left: 0.375rem;
+  color: var(--gcds-text-primary);
+}
+
+/* ── Hint ────────────────────────────────────────────────────────────────────── */
+
+.dp__hint {
+  font-size: 1rem;
+  color: var(--gcds-text-secondary);
+  margin: -0.25rem 0 0.5rem;
+  line-height: 1.5;
+}
+
+/* ── Error message ───────────────────────────────────────────────────────────── */
+
+.dp__error {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gcds-danger-text);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  line-height: 1.5;
+}
+
+.dp__error::before {
+  content: '⚠';
+  flex-shrink: 0;
+}
+
+/* ── Field row (text input + calendar button) ────────────────────────────────── */
+
+.dp__field {
+  display: flex;
+  align-items: stretch;
+}
+
+/* ── Text input ──────────────────────────────────────────────────────────────── */
+
+.dp__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 3rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 1.25rem;
+  font-family: 'Noto Sans', sans-serif;
+  line-height: 1.6;
+  color: var(--gcds-text-primary);
+  background: var(--gcds-bg-white);
+  border: var(--gcds-border-width-md) solid var(--gcds-border-default);
+  border-right: none;
+  border-radius: var(--gcds-border-radius-sm) 0 0 var(--gcds-border-radius-sm);
+  outline: none;
+  appearance: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dp__input::placeholder {
+  color: var(--gcds-text-secondary);
+  font-style: italic;
+  font-size: 1rem;
+}
+
+@layer focus {
+  .dp__input:focus {
+    border-color: var(--gcds-focus-color);
+    outline: var(--gcds-border-width-lg) solid var(--gcds-focus-color);
+    outline-offset: var(--gcds-border-width-md);
+    box-shadow: var(--gcds-focus-shadow);
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@layer error {
+  .dp--error .dp__input:not(:focus) {
+    border-color: var(--gcds-danger-border);
+  }
+  .dp--error .dp__input:focus {
+    outline-color: var(--gcds-danger-border);
+    border-color: var(--gcds-danger-border);
+  }
+}
+
+@layer disabled {
+  .dp__input[disabled] {
+    background: var(--gcds-disabled-bg);
+    color: var(--gcds-text-disabled);
+    border-color: var(--gcds-text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+/* ── Calendar toggle button ──────────────────────────────────────────────────── */
+
+.dp__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  min-height: 3rem;
+  flex-shrink: 0;
+  background: var(--gcds-bg-white);
+  border: var(--gcds-border-width-md) solid var(--gcds-border-default);
+  border-radius: 0 var(--gcds-border-radius-sm) var(--gcds-border-radius-sm) 0;
+  cursor: pointer;
+  color: var(--gcds-text-secondary);
+  outline: none;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.dp__toggle:hover:not([disabled]) {
+  background: #e8eef7;
+  color: var(--gcds-focus-color);
+  border-color: var(--gcds-focus-color);
+}
+
+@layer focus {
+  .dp__toggle:focus-visible {
+    border-color: var(--gcds-focus-color);
+    outline: var(--gcds-border-width-lg) solid var(--gcds-focus-color);
+    outline-offset: var(--gcds-border-width-md);
+    box-shadow: var(--gcds-focus-shadow);
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@layer disabled {
+  .dp__toggle[disabled] {
+    background: var(--gcds-disabled-bg);
+    color: var(--gcds-text-disabled);
+    border-color: var(--gcds-text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+@layer error {
+  .dp--error .dp__toggle:not(:focus-visible) {
+    border-color: var(--gcds-danger-border);
+  }
+}
+
+.dp__toggle svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* ── Calendar dialog ─────────────────────────────────────────────────────────── */
+
+.dp__dialog {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  z-index: 100;
+  background: var(--gcds-bg-white);
+  border: var(--gcds-border-width-md) solid var(--gcds-border-default);
+  border-radius: var(--gcds-border-radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  min-width: 20rem;
+  padding: 0;
+  outline: none;
+}
+
+.dp__dialog[hidden] { display: none; }
+
+/* Adopted stylesheets override the UA [hidden]{display:none} rule, so every
+   element that uses the hidden attribute needs an explicit declaration. */
+.dp__hint[hidden],
+.dp__error[hidden],
+.dp__required[hidden] { display: none; }
+
+/* ── Dialog header (month navigation) ───────────────────────────────────────── */
+
+.dp__dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem 0.75rem 0.5rem;
+  background: #26374a;
+  border-radius: calc(var(--gcds-border-radius-md) - 1px)
+                 calc(var(--gcds-border-radius-md) - 1px) 0 0;
+}
+
+.dp__month-year {
+  flex: 1;
+  margin: 0;
+  font-family: 'Lato', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: center;
+}
+
+/* ── Navigation buttons (prev/next year/month) ───────────────────────────────── */
+
+.dp__nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: var(--gcds-border-radius-sm);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  transition: background-color 0.1s ease;
+}
+
+.dp__nav-btn:hover:not([disabled]) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.dp__nav-btn:focus-visible {
+  outline: none;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+.dp__nav-btn[disabled] {
+  color: rgba(255, 255, 255, 0.35);
+  cursor: not-allowed;
+}
+
+.dp__nav-btn svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* ── Calendar grid ───────────────────────────────────────────────────────────── */
+
+.dp__grid-wrap {
+  padding: 0.5rem 0.75rem;
+}
+
+.dp__grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* Column headers (day names) */
+.dp__grid thead th {
+  padding: 0.375rem 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gcds-text-secondary);
+  letter-spacing: 0.04em;
+}
+
+/* All day cells */
+.dp__day {
+  padding: 0;
+  text-align: center;
+}
+
+.dp__day-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: 0.125rem auto;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  font-family: 'Noto Sans', sans-serif;
+  font-size: 0.9375rem;
+  color: var(--gcds-text-primary);
+  cursor: pointer;
+  line-height: 1;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.dp__day-btn:hover:not([disabled]):not([aria-pressed='true']) {
+  background: #e8eef7;
+  border-color: var(--gcds-focus-color);
+}
+
+/* Focus ring on the active grid cell */
+.dp__day-btn:focus {
+  outline: none;
+  border-color: var(--gcds-focus-color);
+  box-shadow: var(--gcds-focus-shadow),
+              0 0 0 calc(var(--gcds-border-width-lg) + 0.125rem) var(--gcds-focus-color);
+}
+
+/* Today indicator — subtle underline dot */
+.dp__day-btn[data-today] {
+  font-weight: 700;
+  position: relative;
+}
+
+.dp__day-btn[data-today]::after {
+  content: '';
+  position: absolute;
+  bottom: 0.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 50%;
+  background: var(--gcds-blue-dark, #0535d2);
+}
+
+/* Selected date */
+.dp__day-btn[aria-pressed='true'] {
+  background: var(--gcds-blue-dark, #0535d2);
+  border-color: var(--gcds-blue-dark, #0535d2);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.dp__day-btn[aria-pressed='true'][data-today]::after {
+  background: #ffffff;
+}
+
+/* Disabled dates (outside min/max or in disabledDates list) */
+.dp__day-btn[disabled] {
+  color: var(--gcds-text-disabled);
+  cursor: not-allowed;
+  background: transparent;
+  border-color: transparent;
+}
+
+/* Out-of-month padding cells */
+.dp__day--padding {
+  visibility: hidden;
+}
+
+/* ── Dialog footer ───────────────────────────────────────────────────────────── */
+
+.dp__dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem 0.75rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.dp__footer-btn {
+  min-width: 5rem;
+  padding: 0.5rem 1rem;
+  font-family: 'Noto Sans', sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.4;
+  border: var(--gcds-border-width-md) solid var(--gcds-blue-dark, #0535d2);
+  border-radius: var(--gcds-border-radius-sm);
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.dp__footer-btn--cancel {
+  background: var(--gcds-bg-white);
+  color: var(--gcds-blue-dark, #0535d2);
+}
+
+.dp__footer-btn--cancel:hover {
+  background: #e8eef7;
+}
+
+.dp__footer-btn--ok {
+  background: var(--gcds-blue-dark, #0535d2);
+  color: #ffffff;
+}
+
+.dp__footer-btn--ok:hover {
+  background: var(--gcds-blue-hover, #0c2a6e);
+  border-color: var(--gcds-blue-hover, #0c2a6e);
+}
+
+.dp__footer-btn:focus-visible {
+  outline: var(--gcds-border-width-lg) solid var(--gcds-focus-color);
+  outline-offset: var(--gcds-border-width-md);
+  box-shadow: var(--gcds-focus-shadow);
+}
+
+/* ── Keyboard hint (live region) ─────────────────────────────────────────────── */
+
+.dp__kb-hint {
+  padding: 0 0.75rem 0.625rem;
+  font-size: 0.75rem;
+  color: var(--gcds-text-secondary);
+  line-height: 1.5;
+  min-height: 1.25rem;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .dp__input,
+  .dp__toggle,
+  .dp__nav-btn,
+  .dp__day-btn,
+  .dp__footer-btn {
+    transition: none;
+  }
+}
