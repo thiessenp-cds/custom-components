@@ -126,6 +126,12 @@ declare module 'react' {
         min?: string
         /** Latest selectable date (YYYY-MM-DD) */
         max?: string
+        /** Enables range selection mode */
+        range?: boolean
+        /** Range start date (YYYY-MM-DD) — range mode only */
+        'value-start'?: string
+        /** Range end date (YYYY-MM-DD) — range mode only */
+        'value-end'?: string
       }
     }
   }

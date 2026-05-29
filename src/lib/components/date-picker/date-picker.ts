@@ -8,6 +8,13 @@ export interface DateChangeDetail {
   value: string
 }
 
+export interface DateRangeChangeDetail {
+  /** Range start ISO date string (YYYY-MM-DD), or '' when cleared. */
+  start: string
+  /** Range end ISO date string (YYYY-MM-DD), or '' when cleared. */
+  end: string
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const DAYS_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const
@@ -99,6 +106,7 @@ export class AppDatePicker extends CustomElement {
     'label', 'hint', 'name', 'value',
     'required', 'disabled', 'error',
     'min', 'max',
+    'range', 'value-start', 'value-end',
   ]
 
   private static _counter = 0
@@ -123,6 +131,22 @@ export class AppDatePicker extends CustomElement {
   private _minDate: Date | null = null
   private _maxDate: Date | null = null
 
+  // ── Range-mode state ───────────────────────────────────────────────────────
+  /** Whether range selection mode is active */
+  private _isRange = false
+  /** Committed range start ISO string or '' */
+  private _rangeStart = ''
+  /** Committed range end ISO string or '' */
+  private _rangeEnd = ''
+  /**
+   * Which end of the range is being selected.
+   * 'start' — next calendar click sets the start (and resets the end).
+   * 'end'   — next calendar click sets the end.
+   */
+  private _rangePhase: 'start' | 'end' = 'start'
+  /** Live hover/keyboard preview date while in 'end' phase, or null */
+  private _hoverDate: Date | null = null
+
   private readonly _uid: string
 
   // ── DOM refs ───────────────────────────────────────────────────────────────
@@ -131,6 +155,12 @@ export class AppDatePicker extends CustomElement {
   private _hintEl!: HTMLElement
   private _errorEl!: HTMLElement
   private _inputEl!: HTMLInputElement
+  /** In range mode: the start-date text input */
+  private _inputStartEl!: HTMLInputElement
+  /** In range mode: the end-date text input */
+  private _inputEndEl!: HTMLInputElement
+  /** Phase status live region (range mode only) */
+  private _rangeStatusEl!: HTMLElement
   private _toggleBtnEl!: HTMLButtonElement
   private _dialogEl!: HTMLElement
   private _monthYearEl!: HTMLHeadingElement
@@ -157,6 +187,20 @@ export class AppDatePicker extends CustomElement {
 
   get value(): string { return this._value }
   set value(v: string) { this._setCommittedValue(v, false) }
+
+  /** Range mode: committed start date */
+  get valueStart(): string { return this._rangeStart }
+  set valueStart(v: string) { this._setRangeValue(v, this._rangeEnd, false) }
+
+  /** Range mode: committed end date */
+  get valueEnd(): string { return this._rangeEnd }
+  set valueEnd(v: string) { this._setRangeValue(this._rangeStart, v, false) }
+
+  get range(): boolean { return this._isRange }
+  set range(v: boolean) {
+    if (v) this.setAttribute('range', '')
+    else this.removeAttribute('range')
+  }
 
   get name(): string { return this.getAttribute('name') ?? '' }
   set name(v: string) { this.setAttribute('name', v) }
@@ -235,12 +279,17 @@ export class AppDatePicker extends CustomElement {
         this._setCommittedValue(newValue ?? '', false)
         break
       case 'required':
-        this._inputEl.required = newValue !== null
-        this._requiredSpan.hidden = newValue === null
-        this._syncValidity()
+        this._inputEl.required        = newValue !== null
+        this._inputStartEl.required   = newValue !== null
+        this._inputEndEl.required     = newValue !== null
+        this._requiredSpan.hidden     = newValue === null
+        if (this._isRange) this._syncRangeValidity()
+        else this._syncValidity()
         break
       case 'disabled':
-        this._inputEl.disabled = newValue !== null
+        this._inputEl.disabled    = newValue !== null
+        this._inputStartEl.disabled = newValue !== null
+        this._inputEndEl.disabled   = newValue !== null
         this._toggleBtnEl.disabled = newValue !== null
         if (newValue !== null && this._isOpen) this._closeDialog(false)
         break
@@ -255,6 +304,16 @@ export class AppDatePicker extends CustomElement {
         this._maxDate = newValue ? fromIso(newValue) : null
         if (this._isOpen) this._renderGrid()
         break
+      case 'range':
+        this._isRange = newValue !== null
+        if (this._isOpen) this._renderGrid()
+        break
+      case 'value-start':
+        this._setRangeValue(newValue ?? '', this._rangeEnd, false)
+        break
+      case 'value-end':
+        this._setRangeValue(this._rangeStart, newValue ?? '', false)
+        break
     }
   }
 
@@ -263,13 +322,26 @@ export class AppDatePicker extends CustomElement {
   private _renderShell(): void {
     const uid = this._uid
 
+    // The field row differs between single-date and range modes.
+    // We always render the single-date row; range mode appends/swaps it.
+    const calendarSvg = `
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>`
+
     this.shadow.innerHTML = `
       <div class="dp" part="root">
 
-        <label class="dp__label" for="${uid}-input">
-          <span class="dp__label-text"></span>
-          <span class="dp__required" aria-hidden="true" hidden> (required)</span>
-        </label>
+        <div class="dp__label-row">
+          <label class="dp__label" for="${uid}-input">
+            <span class="dp__label-text"></span>
+            <span class="dp__required" aria-hidden="true" hidden> (required)</span>
+          </label>
+        </div>
 
         <div id="${uid}-hint" class="dp__hint" hidden></div>
 
@@ -281,7 +353,8 @@ export class AppDatePicker extends CustomElement {
           hidden
         ></div>
 
-        <div class="dp__field">
+        <!-- Single-date field (hidden when range mode is active) -->
+        <div class="dp__field dp__field--single">
           <input
             type="text"
             id="${uid}-input"
@@ -297,18 +370,52 @@ export class AppDatePicker extends CustomElement {
             aria-label="Choose date"
             aria-haspopup="dialog"
             aria-expanded="false"
-          >
-            <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-          </button>
+          >${calendarSvg}</button>
+        </div>
+
+        <!-- Range field (hidden when single mode is active) -->
+        <div class="dp__field dp__field--range" hidden>
+          <label class="dp__range-label" for="${uid}-input-start">Start</label>
+          <input
+            type="text"
+            id="${uid}-input-start"
+            class="dp__input dp__input--range-start"
+            placeholder="YYYY-MM-DD"
+            autocomplete="off"
+            inputmode="none"
+            aria-describedby="${uid}-hint ${uid}-format ${uid}-error"
+            aria-label="Start date"
+          />
+          <span class="dp__range-sep" aria-hidden="true">\u2013</span>
+          <label class="dp__range-label" for="${uid}-input-end">End</label>
+          <input
+            type="text"
+            id="${uid}-input-end"
+            class="dp__input dp__input--range-end"
+            placeholder="YYYY-MM-DD"
+            autocomplete="off"
+            inputmode="none"
+            aria-describedby="${uid}-hint ${uid}-format ${uid}-error"
+            aria-label="End date"
+          />
+          <button
+            type="button"
+            class="dp__toggle dp__toggle--range"
+            aria-label="Choose date range"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+          >${calendarSvg}</button>
         </div>
 
         <span id="${uid}-format" class="sr-only">Date format: YYYY-MM-DD</span>
+
+        <!-- Range phase announcement (screen readers only) -->
+        <div
+          id="${uid}-range-status"
+          class="sr-only"
+          aria-live="polite"
+          aria-atomic="true"
+        ></div>
 
         <div
           id="${uid}-dialog"
@@ -394,6 +501,9 @@ export class AppDatePicker extends CustomElement {
     this._hintEl         = id('hint')
     this._errorEl        = id('error')
     this._inputEl        = id<HTMLInputElement>('input')
+    this._inputStartEl   = id<HTMLInputElement>('input-start')
+    this._inputEndEl     = id<HTMLInputElement>('input-end')
+    this._rangeStatusEl  = id('range-status')
     this._toggleBtnEl    = q('.dp__toggle')
     this._dialogEl       = id('dialog')
     this._monthYearEl    = id<HTMLHeadingElement>('grid-label')
@@ -412,15 +522,34 @@ export class AppDatePicker extends CustomElement {
   // ── Event binding ──────────────────────────────────────────────────────────
 
   private _bindEvents(): void {
-    // Toggle button — open/close dialog
+    // Single-mode toggle button
     this._toggleBtnEl.addEventListener('click', () => {
       if (this._isOpen) this._closeDialog(true)
       else this._openDialog()
     })
 
+    // Range-mode toggle button (same element for range, use dp__toggle--range)
+    const rangeToggle = this.shadow.querySelector<HTMLButtonElement>('.dp__toggle--range')
+    if (rangeToggle) {
+      rangeToggle.addEventListener('click', () => {
+        if (this._isOpen) this._closeDialog(true)
+        else this._openDialog()
+      })
+    }
+
     // Text input — validate on blur, open on Enter
     this._inputEl.addEventListener('blur', () => this._handleInputBlur())
     this._inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') { e.preventDefault(); this._openDialog() }
+    })
+
+    // Range inputs — validate on blur, open on Enter
+    this._inputStartEl.addEventListener('blur', () => this._handleRangeInputBlur('start'))
+    this._inputStartEl.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') { e.preventDefault(); this._openDialog() }
+    })
+    this._inputEndEl.addEventListener('blur', () => this._handleRangeInputBlur('end'))
+    this._inputEndEl.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter') { e.preventDefault(); this._openDialog() }
     })
 
@@ -433,8 +562,15 @@ export class AppDatePicker extends CustomElement {
     // Footer buttons
     this._cancelBtnEl.addEventListener('click', () => this._closeDialog(true))
     this._okBtnEl.addEventListener('click', () => {
-      this._commitDate(this._focusedDate)
-      this._closeDialog(true)
+      if (this._isRange) {
+        // OK in range mode commits the focused date as whichever phase we're in
+        this._handleRangeDateClick(this._focusedDate)
+        // If both ends are now set, close; otherwise stay open for end selection
+        if (this._rangeStart && this._rangeEnd) this._closeDialog(true)
+      } else {
+        this._commitDate(this._focusedDate)
+        this._closeDialog(true)
+      }
     })
 
     // Dialog-level keyboard handling (Tab trap + Esc)
@@ -464,16 +600,33 @@ export class AppDatePicker extends CustomElement {
   private _openDialog(): void {
     if (this._isOpen || this.disabled) return
 
-    // Determine initial focused date: committed value, or today
-    const committed = fromIso(this._value)
-    this._focusedDate = committed ?? today()
+    if (this._isRange) {
+      // In range mode: always start by picking start (resets pending end preview)
+      this._rangePhase = 'start'
+      this._hoverDate  = null
+      // Seed initial focused date from existing start, or today
+      const committed = fromIso(this._rangeStart)
+      this._focusedDate = committed ?? today()
+      this._dialogEl.setAttribute('aria-label', 'Choose start date')
+      this._announceRangePhase()
+    } else {
+      // Determine initial focused date: committed value, or today
+      const committed = fromIso(this._value)
+      this._focusedDate = committed ?? today()
+    }
+
     this._viewYear  = this._focusedDate.getFullYear()
     this._viewMonth = this._focusedDate.getMonth()
 
     this._renderGrid()
     this._dialogEl.hidden = false
     this._isOpen = true
-    this._toggleBtnEl.setAttribute('aria-expanded', 'true')
+
+    // Update aria-expanded on whichever toggle opened the dialog
+    const activeToggle = this._isRange
+      ? this.shadow.querySelector<HTMLButtonElement>('.dp__toggle--range') ?? this._toggleBtnEl
+      : this._toggleBtnEl
+    activeToggle.setAttribute('aria-expanded', 'true')
 
     // Focus the active grid cell
     this._focusGridCell(this._focusedDate)
@@ -485,10 +638,16 @@ export class AppDatePicker extends CustomElement {
     if (!this._isOpen) return
     this._dialogEl.hidden = true
     this._isOpen = false
-    this._toggleBtnEl.setAttribute('aria-expanded', 'false')
+    this._hoverDate = null
+
+    const activeToggle = this._isRange
+      ? this.shadow.querySelector<HTMLButtonElement>('.dp__toggle--range') ?? this._toggleBtnEl
+      : this._toggleBtnEl
+    activeToggle.setAttribute('aria-expanded', 'false')
     this._kbHintEl.textContent = ''
+    this._rangeStatusEl.textContent = ''
     this._detachOutsideClick()
-    if (returnFocusToToggle) this._toggleBtnEl.focus()
+    if (returnFocusToToggle) activeToggle.focus()
   }
 
   // ── Navigate to prev/next month or year ───────────────────────────────────
@@ -516,10 +675,31 @@ export class AppDatePicker extends CustomElement {
 
     this._monthYearEl.textContent = `${MONTHS[m]} ${y}`
 
-    const firstDow  = new Date(y, m, 1).getDay()   // 0=Sun
+    // Update grid multiselectable for range mode
+    const gridEl = this._gridBodyEl.closest('table')!
+    if (this._isRange) {
+      gridEl.setAttribute('aria-multiselectable', 'true')
+    } else {
+      gridEl.removeAttribute('aria-multiselectable')
+    }
+
+    const firstDow    = new Date(y, m, 1).getDay()   // 0=Sun
     const daysInMonth = new Date(y, m + 1, 0).getDate()
-    const todayIso  = toIso(today())
+    const todayIso    = toIso(today())
     const selectedIso = this._value
+
+    // Range bounds for rendering (use hover preview for end if in-progress)
+    const rangeStartDate = fromIso(this._rangeStart)
+    const rangeEndDate   = this._isRange && this._rangePhase === 'end' && this._hoverDate
+      ? this._hoverDate
+      : fromIso(this._rangeEnd)
+
+    // Normalise so start <= end for highlight comparisons
+    let normStart = rangeStartDate
+    let normEnd   = rangeEndDate
+    if (normStart && normEnd && normStart > normEnd) {
+      [normStart, normEnd] = [normEnd, normStart]
+    }
 
     const rows: string[] = []
     let day = 1 - firstDow  // start from the first visible cell (may be negative)
@@ -533,25 +713,54 @@ export class AppDatePicker extends CustomElement {
           const date   = new Date(y, m, day)
           const iso    = toIso(date)
           const isTod  = iso === todayIso
-          const isSel  = iso === selectedIso
-          const isFoc  = sameDay(date, this._focusedDate)
           const isDis  = this._isDateDisabled(date)
+          const isFoc  = sameDay(date, this._focusedDate)
+
+          let ariaSelected = ''
+          let rangeClass   = ''
+          let extraLabel   = ''
+
+          if (this._isRange) {
+            const isRangeStart = rangeStartDate && sameDay(date, rangeStartDate)
+            const isRangeEnd   = rangeEndDate   && sameDay(date, rangeEndDate)
+            const isInRange    = normStart && normEnd && date > normStart && date < normEnd
+            const isSelected   = isRangeStart || isRangeEnd
+
+            ariaSelected = isSelected ? ' aria-selected="true"' : ' aria-selected="false"'
+
+            if (isRangeStart && isRangeEnd) {
+              rangeClass = ' dp__day-btn--range-single'
+              extraLabel = ', selected as single-day range'
+            } else if (isRangeStart) {
+              rangeClass = ' dp__day-btn--range-start'
+              extraLabel = ', range start'
+            } else if (isRangeEnd) {
+              rangeClass = ' dp__day-btn--range-end'
+              extraLabel = ', range end'
+            } else if (isInRange) {
+              rangeClass = ' dp__day-btn--in-range'
+              extraLabel = ', in selected range'
+            }
+          } else {
+            const isSel = iso === selectedIso
+            ariaSelected = isSel ? ' aria-pressed="true"' : ' aria-pressed="false"'
+            if (isSel) extraLabel = ', selected'
+          }
 
           const todayAttr    = isTod ? ' data-today' : ''
-          const pressedAttr  = isSel ? ' aria-pressed="true"' : ' aria-pressed="false"'
           const disabledAttr = isDis ? ' disabled' : ''
           const tabindex     = isFoc && !isDis ? '0' : '-1'
-          const label        = `${DAYS_FULL[date.getDay()]}, ${MONTHS[m]} ${day}, ${y}${isTod ? ', today' : ''}${isSel ? ', selected' : ''}`
+          const label        = `${DAYS_FULL[date.getDay()]}, ${MONTHS[m]} ${day}, ${y}${isTod ? ', today' : ''}${extraLabel}`
 
           cells.push(`
             <td class="dp__day" role="gridcell">
               <button
                 type="button"
-                class="dp__day-btn"
+                class="dp__day-btn${rangeClass}"
                 data-date="${iso}"
                 tabindex="${tabindex}"
                 aria-label="${label}"
-                ${pressedAttr}${todayAttr}${disabledAttr}
+                ${ariaSelected}${todayAttr}${disabledAttr}
               >${day}</button>
             </td>`)
         }
@@ -564,16 +773,34 @@ export class AppDatePicker extends CustomElement {
 
     this._gridBodyEl.innerHTML = rows.join('')
 
-    // Wire click handlers on day buttons
+    // Wire click and mouseover handlers on day buttons
     this._gridBodyEl.querySelectorAll<HTMLButtonElement>('.dp__day-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const iso = btn.dataset.date
         if (!iso) return
         const d = fromIso(iso)
         if (!d) return
-        this._commitDate(d)
-        this._closeDialog(true)
+        if (this._isRange) {
+          this._handleRangeDateClick(d)
+        } else {
+          this._commitDate(d)
+          this._closeDialog(true)
+        }
       })
+
+      // Hover preview: update pending end while in phase 'end'
+      if (this._isRange) {
+        btn.addEventListener('mouseover', () => {
+          if (this._rangePhase !== 'end') return
+          const iso = btn.dataset.date
+          if (!iso) return
+          const d = fromIso(iso)
+          if (!d || this._isDateDisabled(d)) return
+          this._hoverDate = d
+          this._renderGrid()
+          this._focusGridCell(this._focusedDate)
+        })
+      }
     })
   }
 
@@ -624,8 +851,12 @@ export class AppDatePicker extends CustomElement {
       case 'Enter':
       case ' ':
         if (!this._isDateDisabled(this._focusedDate)) {
-          this._commitDate(this._focusedDate)
-          this._closeDialog(true)
+          if (this._isRange) {
+            this._handleRangeDateClick(this._focusedDate)
+          } else {
+            this._commitDate(this._focusedDate)
+            this._closeDialog(true)
+          }
         }
         break
       default:
@@ -641,6 +872,11 @@ export class AppDatePicker extends CustomElement {
     if (this._isDateDisabled(date)) return
 
     this._focusedDate = date
+
+    // In range end-phase, track hover via keyboard too
+    if (this._isRange && this._rangePhase === 'end') {
+      this._hoverDate = date
+    }
 
     // If navigated to a different month, re-render
     if (date.getFullYear() !== this._viewYear || date.getMonth() !== this._viewMonth) {
@@ -749,10 +985,150 @@ export class AppDatePicker extends CustomElement {
     }
   }
 
+  // ── Range selection ────────────────────────────────────────────────────────
+
+  /**
+   * Two-phase range click handler.
+   * Phase 'start': sets the start date, transitions to 'end' phase.
+   * Phase 'end':   sets the end date (swaps if necessary), commits, closes.
+   */
+  private _handleRangeDateClick(date: Date): void {
+    if (this._isDateDisabled(date)) return
+
+    if (this._rangePhase === 'start') {
+      this._rangeStart  = toIso(date)
+      this._rangeEnd    = ''
+      this._rangePhase  = 'end'
+      this._hoverDate   = date
+      this._dialogEl.setAttribute('aria-label', 'Choose end date')
+      this._announceRangePhase()
+      this._renderGrid()
+      this._focusGridCell(this._focusedDate)
+    } else {
+      // End phase — normalise order
+      let start = this._rangeStart
+      let end   = toIso(date)
+      const startDate = fromIso(start)!
+      if (startDate > date) {
+        // User picked an end before the start — swap
+        ;[start, end] = [end, start]
+      }
+      this._setRangeValue(start, end, true)
+      this._closeDialog(true)
+    }
+  }
+
+  private _setRangeValue(start: string, end: string, fireEvent: boolean): void {
+    const normStart = start.trim()
+    const normEnd   = end.trim()
+
+    const startValid = normStart === '' || fromIso(normStart) !== null
+    const endValid   = normEnd   === '' || fromIso(normEnd)   !== null
+    if (!startValid || !endValid) return
+
+    this._rangeStart = normStart
+    this._rangeEnd   = normEnd
+
+    if (!this._inputStartEl) return  // not yet connected
+
+    this._inputStartEl.value = normStart
+    this._inputEndEl.value   = normEnd
+
+    // Form value: two entries using name-start / name-end
+    const formData = new FormData()
+    if (normStart) formData.append(`${this.name}-start`, normStart)
+    if (normEnd)   formData.append(`${this.name}-end`,   normEnd)
+    this._internals.setFormValue(normStart && normEnd ? formData : null)
+
+    const rangeToggle = this.shadow.querySelector<HTMLButtonElement>('.dp__toggle--range')
+    if (rangeToggle) {
+      const label = normStart && normEnd
+        ? `Change date range, ${normStart} to ${normEnd}`
+        : 'Choose date range'
+      rangeToggle.setAttribute('aria-label', label)
+    }
+
+    this._syncRangeValidity()
+    if (fireEvent) {
+      this.emit<DateRangeChangeDetail>('date-range-change', { start: normStart, end: normEnd })
+    }
+  }
+
+  private _announceRangePhase(): void {
+    if (this._rangePhase === 'start') {
+      this._rangeStatusEl.textContent = 'Choose a start date.'
+    } else {
+      const s = this._rangeStart
+      this._rangeStatusEl.textContent = s
+        ? `Start date set to ${s}. Now choose an end date.`
+        : 'Now choose an end date.'
+    }
+  }
+
+  // ── Range input blur ───────────────────────────────────────────────────────
+
+  private _handleRangeInputBlur(field: 'start' | 'end'): void {
+    const inputEl = field === 'start' ? this._inputStartEl : this._inputEndEl
+    const raw = inputEl.value.trim()
+    const other = field === 'start' ? this._rangeEnd : this._rangeStart
+
+    if (raw === '') {
+      const newStart = field === 'start' ? '' : this._rangeStart
+      const newEnd   = field === 'end'   ? '' : this._rangeEnd
+      this._setRangeValue(newStart, newEnd, true)
+      return
+    }
+
+    const parsed = fromIso(raw)
+    if (!parsed) {
+      this._syncError('Please enter a valid date in YYYY-MM-DD format.')
+      return
+    }
+    if (this._minDate && parsed < this._minDate) {
+      this._syncError(`Date must be on or after ${toIso(this._minDate)}.`)
+      return
+    }
+    if (this._maxDate && parsed > this._maxDate) {
+      this._syncError(`Date must be on or before ${toIso(this._maxDate)}.`)
+      return
+    }
+
+    // Cross-field order validation
+    const otherDate = fromIso(other)
+    if (field === 'start' && otherDate && parsed > otherDate) {
+      this._syncError('Start date must be on or before the end date.')
+      return
+    }
+    if (field === 'end' && otherDate && parsed < otherDate) {
+      this._syncError('End date must be on or after the start date.')
+      return
+    }
+
+    if (!this.getAttribute('error')) this._syncError(null)
+
+    const newStart = field === 'start' ? raw : this._rangeStart
+    const newEnd   = field === 'end'   ? raw : this._rangeEnd
+    this._setRangeValue(newStart, newEnd, true)
+  }
+
+  // ── Range validity ─────────────────────────────────────────────────────────
+
+  private _syncRangeValidity(): void {
+    const required = this.hasAttribute('required')
+    if (required && (!this._rangeStart || !this._rangeEnd)) {
+      this._internals.setValidity(
+        { valueMissing: true },
+        'Please select a start and end date.',
+        this._inputStartEl,
+      )
+    } else {
+      this._internals.setValidity({})
+    }
+  }
+
   // ── Text input blur validation ─────────────────────────────────────────────
 
-  private _handleInputBlur(): void {
-    const raw = this._inputEl.value.trim()
+  private _handleInputBlur(): void {    const raw = this._inputEl.value.trim()
     if (raw === '') {
       this._setCommittedValue('', true)
       return
@@ -795,14 +1171,12 @@ export class AppDatePicker extends CustomElement {
   private _syncAllAttrs(): void {
     const label    = this.getAttribute('label')    ?? ''
     const hint     = this.getAttribute('hint')
-    // Prefer _value (may have been set via JS property before connectedCallback)
-    // over the attribute; fall back to the attribute if _value is empty.
-    const value    = this._value || (this.getAttribute('value') ?? '')
     const error    = this.getAttribute('error')
     const required = this.hasAttribute('required')
     const disabled = this.hasAttribute('disabled')
     const minAttr  = this.getAttribute('min')
     const maxAttr  = this.getAttribute('max')
+    const isRange  = this.hasAttribute('range')
 
     this._labelEl.querySelector('.dp__label-text')!.textContent = label
 
@@ -810,20 +1184,47 @@ export class AppDatePicker extends CustomElement {
     if (error)    this._syncError(error)
 
     if (required) {
-      this._inputEl.required   = true
-      this._requiredSpan.hidden = false
+      this._inputEl.required        = true
+      this._inputStartEl.required   = true
+      this._inputEndEl.required     = true
+      this._requiredSpan.hidden     = false
     }
     if (disabled) {
-      this._inputEl.disabled    = true
-      this._toggleBtnEl.disabled = true
+      this._inputEl.disabled           = true
+      this._inputStartEl.disabled      = true
+      this._inputEndEl.disabled        = true
+      this._toggleBtnEl.disabled       = true
+      const rangeToggle = this.shadow.querySelector<HTMLButtonElement>('.dp__toggle--range')
+      if (rangeToggle) rangeToggle.disabled = true
     }
 
     this._minDate = minAttr ? fromIso(minAttr) : null
     this._maxDate = maxAttr ? fromIso(maxAttr) : null
+    this._isRange = isRange
 
-    if (value) this._setCommittedValue(value, false)
+    // Show the correct field row
+    const singleField = this.shadow.querySelector<HTMLElement>('.dp__field--single')!
+    const rangeField  = this.shadow.querySelector<HTMLElement>('.dp__field--range')!
+    singleField.hidden = isRange
+    rangeField.hidden  = !isRange
 
-    this._syncValidity()
+    // Update label `for` to point to the correct primary input
+    this._labelEl.setAttribute('for', isRange ? `${this._uid}-input-start` : `${this._uid}-input`)
+
+    if (isRange) {
+      // Prefer _rangeStart/_rangeEnd (may have been set via JS property before connectedCallback)
+      const startAttr = this.getAttribute('value-start') ?? ''
+      const endAttr   = this.getAttribute('value-end')   ?? ''
+      const start = this._rangeStart || startAttr
+      const end   = this._rangeEnd   || endAttr
+      if (start || end) this._setRangeValue(start, end, false)
+      this._syncRangeValidity()
+    } else {
+      // Prefer _value (may have been set via JS property before connectedCallback)
+      const value = this._value || (this.getAttribute('value') ?? '')
+      if (value) this._setCommittedValue(value, false)
+      this._syncValidity()
+    }
   }
 
   private _syncHint(hint: string | null): void {

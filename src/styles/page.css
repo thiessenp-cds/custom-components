@@ -58,6 +58,56 @@
   margin: var(--gcds-spacing-300) 0 var(--gcds-spacing-500);
 }
 
+/* ── Variant group heading ────────────────────────────── */
+/*
+ * Labels major variants of a component on a single page,
+ * e.g. "Single date" / "Date range" on the Date Picker page.
+ */
+.variant-heading {
+  margin-top: var(--gcds-spacing-500);
+  margin-bottom: 0;
+}
+
+.variant-heading--spaced {
+  margin-top: var(--gcds-spacing-900);
+}
+
+.variant-heading__title {
+  font-family: var(--gcds-font-families-body);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gcds-text-primary);
+  margin: 0 0 var(--gcds-spacing-150);
+  display: flex;
+  align-items: center;
+  gap: var(--gcds-spacing-200);
+}
+
+.variant-heading__title::before {
+  content: '';
+  display: inline-block;
+  width: 0.3125rem;
+  height: 1.5rem;
+  background: var(--gcds-color-blue-dark);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.variant-heading__desc {
+  font-size: 1rem;
+  color: var(--gcds-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 48rem;
+}
+
+.variant-heading__desc code {
+  font-size: 0.875em;
+  background: #f0f4f9;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+
 /* ── Section group heading ───────────────────────────── */
 .group-heading {
   font-family: var(--gcds-font-families-body);

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Layout } from '../App'
-import { DatePicker } from '../lib/components/date-picker'
-import type { DateChangeDetail } from '../lib/components/date-picker'
+import { DatePicker, DateRangePicker } from '../lib/components/date-picker'
+import type { DateChangeDetail, DateRangeChangeDetail } from '../lib/components/date-picker'
 import '../styles/page.css'
 
 // ── Local helpers ─────────────────────────────────────────────────────────────
@@ -135,6 +135,108 @@ function DisabledDemo() {
   )
 }
 
+// ── Range demos ───────────────────────────────────────────────────────────────
+
+function RangeDefaultDemo() {
+  const [range, setRange] = useState({ start: '', end: '' })
+  return (
+    <>
+      <DateRangePicker
+        label="Date range"
+        name="trip"
+        hint="Select the start and end dates for your trip."
+        onChange={(d: DateRangeChangeDetail) => setRange({ start: d.start, end: d.end })}
+      />
+      {range.start && range.end && (
+        <p style={{ fontSize: '0.875rem', marginTop: 0 }}>
+          Selected: <strong>{range.start}</strong> to <strong>{range.end}</strong>
+        </p>
+      )}
+    </>
+  )
+}
+
+function RangeRequiredDemo() {
+  const [range, setRange] = useState({ start: '', end: '' })
+  return (
+    <>
+      <DateRangePicker
+        label="Booking dates"
+        name="booking"
+        required
+        onChange={(d: DateRangeChangeDetail) => setRange({ start: d.start, end: d.end })}
+      />
+      {range.start && range.end && (
+        <p style={{ fontSize: '0.875rem', marginTop: 0 }}>
+          Selected: <strong>{range.start}</strong> to <strong>{range.end}</strong>
+        </p>
+      )}
+    </>
+  )
+}
+
+function RangeMinMaxDemo() {
+  const todayDate = new Date()
+  const maxDate = new Date(todayDate)
+  maxDate.setDate(maxDate.getDate() + 90)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  const minStr = fmt(todayDate)
+  const maxStr = fmt(maxDate)
+
+  const [range, setRange] = useState({ start: '', end: '' })
+  return (
+    <>
+      <DateRangePicker
+        label="Vacation window"
+        name="vacation"
+        hint={`Select dates within the next 90 days (${minStr} – ${maxStr}).`}
+        min={minStr}
+        max={maxStr}
+        onChange={(d: DateRangeChangeDetail) => setRange({ start: d.start, end: d.end })}
+      />
+      {range.start && range.end && (
+        <p style={{ fontSize: '0.875rem', marginTop: 0 }}>
+          Selected: <strong>{range.start}</strong> to <strong>{range.end}</strong>
+        </p>
+      )}
+    </>
+  )
+}
+
+function RangePreselectedDemo() {
+  const [range, setRange] = useState({ start: '2026-07-01', end: '2026-07-14' })
+  return (
+    <>
+      <DateRangePicker
+        label="Reservation period"
+        name="reservation"
+        valueStart={range.start}
+        valueEnd={range.end}
+        onChange={(d: DateRangeChangeDetail) => setRange({ start: d.start, end: d.end })}
+      />
+      {range.start && range.end && (
+        <p style={{ fontSize: '0.875rem', marginTop: 0 }}>
+          Selected: <strong>{range.start}</strong> to <strong>{range.end}</strong>
+        </p>
+      )}
+    </>
+  )
+}
+
+function RangeDisabledDemo() {
+  return (
+    <DateRangePicker
+      label="Archived period"
+      name="archived-range"
+      valueStart="2023-11-01"
+      valueEnd="2023-11-30"
+      disabled
+    />
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function DatePickerPage() {
@@ -163,15 +265,20 @@ export default function DatePickerPage() {
         </a>{' '}
         pattern. Uses a modal calendar grid (<code>role="dialog"</code> +{' '}
         <code>role="grid"</code>) with full keyboard navigation, focus trapping,
-        and form association.
+        and form association. The same custom element supports both single-date
+        and date-range selection via the <code>range</code> attribute.
       </p>
 
-      <ul className="page-description">
-        <li>Type a date directly into the field (YYYY-MM-DD) or click the calendar icon.</li>
-        <li>Arrow keys navigate days; Page Up/Down changes months; Shift + Page Up/Down changes years.</li>
-        <li>Enter or Space selects the focused date. Esc closes without selecting.</li>
-        <li>Tab cycles through: ‹‹ ‹ month/year heading › ›› · focused grid cell · Cancel · OK.</li>
-      </ul>
+      {/* ── Single date ───────────────────────────────────────────────── */}
+
+      <div className="variant-heading">
+        <h2 className="variant-heading__title">Single date</h2>
+        <p className="variant-heading__desc">
+          Type directly (YYYY-MM-DD) or open the calendar. Arrow keys navigate
+          days; Page Up/Down changes months; Shift + Page Up/Down changes years.
+          Enter or Space selects; Esc closes without selecting.
+        </p>
+      </div>
 
       <hr className="page-divider" />
 
@@ -203,6 +310,45 @@ export default function DatePickerPage() {
 
       <Section title="Disabled" description="The entire control is disabled.">
         <DisabledDemo />
+      </Section>
+
+      {/* ── Date range ────────────────────────────────────────────────── */}
+
+      <div className="variant-heading variant-heading--spaced">
+        <h2 className="variant-heading__title">Date range</h2>
+        <p className="variant-heading__desc">
+          Enabled with the <code>range</code> attribute. Two-phase selection:
+          the first click sets the start date; the second sets the end. Mouse
+          hover and arrow-key navigation both preview the pending range in
+          real time. Dates are swapped automatically if end is picked before
+          start. Screen readers hear a live-region announcement after the first
+          selection: <em>"Start date set to …. Now choose an end date."</em>
+        </p>
+      </div>
+
+      <hr className="page-divider" />
+
+      <Section title="Default" description="A basic date range picker with a label and hint.">
+        <RangeDefaultDemo />
+      </Section>
+
+      <Section title="Required" description="Both start and end must be selected before form submission.">
+        <RangeRequiredDemo />
+      </Section>
+
+      <Section
+        title="Min / Max dates"
+        description="Dates outside the permitted range are greyed out and not selectable."
+      >
+        <RangeMinMaxDemo />
+      </Section>
+
+      <Section title="Pre-selected range" description="Range initialised with existing start and end values.">
+        <RangePreselectedDemo />
+      </Section>
+
+      <Section title="Disabled" description="The entire control is disabled.">
+        <RangeDisabledDemo />
       </Section>
     </Layout>
   )

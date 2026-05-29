@@ -240,7 +240,9 @@
    element that uses the hidden attribute needs an explicit declaration. */
 .dp__hint[hidden],
 .dp__error[hidden],
-.dp__required[hidden] { display: none; }
+.dp__required[hidden],
+.dp__field--single[hidden],
+.dp__field--range[hidden] { display: none; }
 
 /* ── Dialog header (month navigation) ───────────────────────────────────────── */
 
@@ -473,4 +475,130 @@
   .dp__footer-btn {
     transition: none;
   }
+}
+
+/* ── Range field layout ──────────────────────────────────────────────────────── */
+
+.dp__field--range {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.dp__range-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dp__input--range-start {
+  border-radius: var(--gcds-border-radius-sm) 0 0 var(--gcds-border-radius-sm);
+  border-right: none;
+  text-align: center;
+}
+
+.dp__input--range-end {
+  border-radius: 0;
+  border-right: none;
+  text-align: center;
+}
+
+.dp__range-sep {
+  flex-shrink: 0;
+  padding: 0 0.375rem;
+  font-size: 1.25rem;
+  color: var(--gcds-text-secondary);
+  background: var(--gcds-bg-white);
+  border-top: var(--gcds-border-width-md) solid var(--gcds-border-default);
+  border-bottom: var(--gcds-border-width-md) solid var(--gcds-border-default);
+  line-height: 3rem;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  user-select: none;
+}
+
+.dp--error .dp__range-sep:not(:focus-within) {
+  border-color: var(--gcds-danger-border);
+}
+
+/* ── Range day button states ─────────────────────────────────────────────────── */
+
+/* Dates within the selected range (between start and end) */
+.dp__day-btn--in-range {
+  background: #d0e0f7;
+  border-color: transparent;
+  border-radius: 0;
+  color: var(--gcds-text-primary);
+  width: 100%;
+  border-radius: 0;
+  margin: 0.125rem 0;
+  /* Override the default circular shape — stretch across the cell */
+  width: calc(2.25rem + 0.25rem);
+}
+
+/* Range start — left half of pill */
+.dp__day-btn--range-start {
+  background: var(--gcds-blue-dark, #0535d2);
+  border-color: var(--gcds-blue-dark, #0535d2);
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 50% 0 0 50%;
+  margin: 0.125rem 0;
+  width: calc(2.25rem + 0.25rem);
+  padding-right: 0.125rem;
+}
+
+/* Range end — right half of pill */
+.dp__day-btn--range-end {
+  background: var(--gcds-blue-dark, #0535d2);
+  border-color: var(--gcds-blue-dark, #0535d2);
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 0 50% 50% 0;
+  margin: 0.125rem 0;
+  width: calc(2.25rem + 0.25rem);
+  padding-left: 0.125rem;
+}
+
+/* Single-day range (start = end) */
+.dp__day-btn--range-single {
+  background: var(--gcds-blue-dark, #0535d2);
+  border-color: var(--gcds-blue-dark, #0535d2);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* Hover on range endpoints */
+.dp__day-btn--range-start:hover:not([disabled]),
+.dp__day-btn--range-end:hover:not([disabled]) {
+  background: var(--gcds-blue-hover, #0c2a6e);
+  border-color: var(--gcds-blue-hover, #0c2a6e);
+}
+
+/* Focus ring on range endpoint buttons */
+.dp__day-btn--range-start:focus,
+.dp__day-btn--range-end:focus,
+.dp__day-btn--range-single:focus {
+  outline: none;
+  border-color: var(--gcds-focus-color);
+  box-shadow: var(--gcds-focus-shadow),
+              0 0 0 calc(var(--gcds-border-width-lg) + 0.125rem) var(--gcds-focus-color);
+}
+
+/* Today dot colour within range */
+.dp__day-btn--range-start[data-today]::after,
+.dp__day-btn--range-end[data-today]::after,
+.dp__day-btn--range-single[data-today]::after {
+  background: #ffffff;
+}
+
+.dp__day-btn--in-range[data-today]::after {
+  background: var(--gcds-blue-dark, #0535d2);
 }

@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react'
 // Side-effect: registers <app-date-picker> with customElements.define
 import './date-picker'
-import type { AppDatePicker, DateChangeDetail } from './date-picker'
+import type { AppDatePicker, DateChangeDetail, DateRangeChangeDetail } from './date-picker'
 
-export type { DateChangeDetail } from './date-picker'
+export type { DateChangeDetail, DateRangeChangeDetail } from './date-picker'
 
 // ── React wrapper ─────────────────────────────────────────────────────────────
 
@@ -88,6 +88,92 @@ export function DatePicker({
       hint={hint}
       name={name}
       value={value}
+      required={required || undefined}
+      disabled={disabled || undefined}
+      error={error}
+      min={min}
+      max={max}
+    />
+  )
+}
+
+// ── DateRangePicker ───────────────────────────────────────────────────────────
+
+export interface DateRangePickerProps {
+  /** Visible label text */
+  label: string
+  /** Hint text shown below the label */
+  hint?: string
+  /** Form field name prefix (submitted as name-start / name-end) */
+  name: string
+  /** Selected range start ISO date string (YYYY-MM-DD) */
+  valueStart?: string
+  /** Selected range end ISO date string (YYYY-MM-DD) */
+  valueEnd?: string
+  /** Marks the field as required */
+  required?: boolean
+  /** Disables the control */
+  disabled?: boolean
+  /** Validation error message */
+  error?: string
+  /** Earliest selectable date (YYYY-MM-DD) */
+  min?: string
+  /** Latest selectable date (YYYY-MM-DD) */
+  max?: string
+  /** Individual dates to disable, as YYYY-MM-DD strings */
+  disabledDates?: string[]
+  /** Fires when a range is committed; detail: { start, end } */
+  onChange?: (detail: DateRangeChangeDetail) => void
+}
+
+/**
+ * React wrapper for <app-date-picker range>.
+ *
+ * Renders the same custom element with `range` attribute set, exposing
+ * start/end props and wiring the `date-range-change` event to `onChange`.
+ */
+export function DateRangePicker({
+  label,
+  hint,
+  name,
+  valueStart,
+  valueEnd,
+  required,
+  disabled,
+  error,
+  min,
+  max,
+  disabledDates,
+  onChange,
+}: DateRangePickerProps) {
+  const ref = useRef<AppDatePicker>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    if (disabledDates !== undefined) {
+      el.disabledDates = disabledDates
+    }
+
+    if (!onChange) return
+
+    const handler = (e: Event) => {
+      onChange((e as CustomEvent<DateRangeChangeDetail>).detail)
+    }
+    el.addEventListener('date-range-change', handler)
+    return () => el.removeEventListener('date-range-change', handler)
+  }, [disabledDates, onChange])
+
+  return (
+    <app-date-picker
+      ref={ref as React.Ref<AppDatePicker>}
+      label={label}
+      hint={hint}
+      name={name}
+      range
+      value-start={valueStart}
+      value-end={valueEnd}
       required={required || undefined}
       disabled={disabled || undefined}
       error={error}
