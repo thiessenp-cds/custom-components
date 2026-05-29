@@ -19,6 +19,7 @@ export interface ComboboxProps {
   error?: string
   options: ComboboxOption[]
   value?: string
+  fallbackSelect?: boolean
   onChange?: (detail: ComboboxChangeDetail) => void
   onInput?: (detail: ComboboxInputDetail) => void
 }
@@ -47,6 +48,7 @@ export function Combobox({
   error,
   options,
   value,
+  fallbackSelect,
   onChange,
   onInput,
 }: ComboboxProps) {
@@ -84,6 +86,7 @@ export function Combobox({
       disabled={disabled}
       error={error}
       value={value}
+      fallback-select={fallbackSelect || undefined}
     />
   )
 }

@@ -40,6 +40,7 @@ interface RawComboboxDemoProps {
   error?: string
   options: ComboboxOption[]
   showValue?: boolean
+  fallbackSelect?: boolean
   onChange?: (detail: ComboboxChangeDetail) => void
 }
 
@@ -53,6 +54,7 @@ function RawComboboxDemo({
   error,
   options,
   showValue = true,
+  fallbackSelect,
   onChange,
 }: RawComboboxDemoProps) {
   const ref = useRef<HTMLElement>(null)
@@ -82,6 +84,7 @@ function RawComboboxDemo({
         required={required}
         disabled={disabled}
         error={error}
+        fallback-select={fallbackSelect || undefined}
       />
       {showValue && selected && (
         <p className="example-value">
@@ -96,7 +99,11 @@ function RawComboboxDemo({
 // Shows inline error handling: error message appears on submit with no selection
 // and clears as soon as the user makes a choice.
 
-function RequiredFormDemo() {
+interface RequiredFormDemoProps {
+  fallbackSelect?: boolean
+}
+
+function RequiredFormDemo({ fallbackSelect }: RequiredFormDemoProps) {
   const [error, setError] = useState<string | null>(null)
   const [submittedValue, setSubmittedValue] = useState<string | null>(null)
 
@@ -124,6 +131,7 @@ function RequiredFormDemo() {
         required
         options={PROVINCES}
         error={error ?? undefined}
+        fallbackSelect={fallbackSelect}
         onChange={() => setError(null)}
         showValue={false}
       />
@@ -256,7 +264,7 @@ export default function ComboboxPage() {
       <p className="page-description">
         An accessible combobox with list autocomplete (type-to-filter). Options are filtered as the
         user types; keyboard navigation (↓ / ↑, Enter, Escape) and full form participation via{' '}
-        <code>ElementInternals</code> are supported. This was Implemented following the{' '}
+        <code>ElementInternals</code> are supported. This was implemented following the{' '}
         <a
           href="https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/"
           target="_blank"
@@ -273,6 +281,14 @@ export default function ComboboxPage() {
       <IssueTable issues={ISSUES} />
 
       <hr className="page-divider" />
+
+      <div className="variant-heading">
+        <h2 className="variant-heading__title">Standard</h2>
+        <p className="variant-heading__desc">
+          Full combobox autocomplete widget. Best suited for pointer devices (mouse / trackpad)
+          where typing and keyboard navigation are natural.
+        </p>
+      </div>
 
       <Section
         title="Default"
@@ -318,6 +334,68 @@ export default function ComboboxPage() {
           options={COUNTRIES}
           disabled
           showValue={false}
+        />
+      </Section>
+
+      <div className="variant-heading variant-heading--spaced">
+        <h2 className="variant-heading__title">With native select fallback</h2>
+        <p className="variant-heading__desc">
+          Add the <code>fallback-select</code> attribute to enable a native{' '}
+          <code>&lt;select&gt;</code> fallback for touch / mobile devices{' '}
+          (<code>pointer: coarse</code>). On pointer devices the full combobox widget is shown; on
+          touch devices the native select is shown instead for reliable cross-device support. The
+          switch is CSS-driven and reinforced with the <code>inert</code> attribute so the hidden
+          widget is never reachable by keyboard.
+        </p>
+      </div>
+
+      <Section
+        title="Default"
+        description="On a touch device (pointer: coarse) a native select is shown. Resize your browser or use device emulation to test."
+      >
+        <RawComboboxDemo
+          label="Select a country"
+          placeholder="Search countries…"
+          name="fs-country-default"
+          options={COUNTRIES}
+          fallbackSelect
+        />
+      </Section>
+
+      <Section
+        title="Required"
+        description="Form participation works in both modes — the active widget (combobox or select) anchors validation."
+      >
+        <RequiredFormDemo fallbackSelect />
+      </Section>
+
+      <Section
+        title="With error"
+        description="The error message and styling are applied to both the combobox and select sections simultaneously."
+      >
+        <RawComboboxDemo
+          label="Province or territory"
+          hint="Select the province or territory where you currently reside."
+          name="fs-province-error"
+          options={PROVINCES}
+          error="Select a province or territory"
+          showValue={false}
+          fallbackSelect
+        />
+      </Section>
+
+      <Section
+        title="Disabled"
+        description="The disabled attribute is reflected to both the combobox input and the native select."
+      >
+        <RawComboboxDemo
+          label="Select a country"
+          placeholder="Search countries…"
+          name="fs-country-disabled"
+          options={COUNTRIES}
+          disabled
+          showValue={false}
+          fallbackSelect
         />
       </Section>
     </Layout>

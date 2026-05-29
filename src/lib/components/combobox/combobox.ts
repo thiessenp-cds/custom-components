@@ -1,5 +1,6 @@
 import { CustomElement } from '../../CustomElement'
 import styles from './combobox.css?inline'
+import fallbackStyles from '../combobox-fallback-select/combobox-fallback-select.css?inline'
 import {
   parseOptionsFromAttr,
   parseOptionsFromChildren,
@@ -47,6 +48,7 @@ export class AppCombobox extends CustomElement {
     'required',
     'value',
     'error',
+    'fallback-select',
   ]
 
   // ── Instance counter for unique IDs ─────────────────────────────────────────
@@ -64,12 +66,24 @@ export class AppCombobox extends CustomElement {
   private _listboxEl!: HTMLUListElement
   private _optionEls: HTMLLIElement[] = []
 
+  // ── DOM refs — fallback-select mode ──────────────────────────────────────────
+  private _cbSection: HTMLDivElement | null = null
+  private _selSection: HTMLDivElement | null = null
+  private _selRoot: HTMLDivElement | null = null
+  private _selLabelEl: HTMLLabelElement | null = null
+  private _selHintEl: HTMLElement | null = null
+  private _selErrorEl: HTMLElement | null = null
+  private _selectEl: HTMLSelectElement | null = null
+
   // ── State ─────────────────────────────────────────────────────────────────────
   private _options: ComboboxOption[] = []
   private _filteredOptions: ComboboxOption[] = []
   private _value = ''
   private _activeIndex = -1
   private _isOpen = false
+  private _isFallback = false
+  private _fallbackStylesAdopted = false
+  private _mql: MediaQueryList | null = null
   private readonly _uid: string
 
   constructor() {
@@ -99,7 +113,9 @@ export class AppCombobox extends CustomElement {
   }
 
   override disconnectedCallback(): void {
-    // Event listeners are on shadow DOM elements — GC'd with the element.
+    if (this._mql) {
+      this._mql.removeEventListener('change', this._onPointerChange)
+    }
   }
 
   override attributeChangedCallback(
@@ -124,6 +140,7 @@ export class AppCombobox extends CustomElement {
       case 'disabled':
         this._inputEl.disabled = newValue !== null
         this._toggleBtn.disabled = newValue !== null
+        if (this._selectEl) this._selectEl.disabled = newValue !== null
         break
       case 'required':
         this._inputEl.required = newValue !== null
@@ -134,6 +151,11 @@ export class AppCombobox extends CustomElement {
         break
       case 'error':
         this._syncError(newValue)
+        break
+      case 'fallback-select':
+        this._isFallback = newValue !== null
+        this._render()
+        this._bindEvents()
         break
     }
   }
@@ -209,6 +231,7 @@ export class AppCombobox extends CustomElement {
     const placeholder = this.getAttribute('placeholder') ?? ''
     const disabled = this.hasAttribute('disabled')
     const required = this.hasAttribute('required')
+    this._isFallback = this.hasAttribute('fallback-select')
 
     const inputId = `${this._uid}-input`
     const listboxId = `${this._uid}-listbox`
@@ -217,6 +240,15 @@ export class AppCombobox extends CustomElement {
 
     // Clear any previous render (leaves adoptedStyleSheets intact)
     this.shadow.innerHTML = ''
+
+    // Reset fallback section refs on each render
+    this._cbSection = null
+    this._selSection = null
+    this._selRoot = null
+    this._selLabelEl = null
+    this._selHintEl = null
+    this._selErrorEl = null
+    this._selectEl = null
 
     const root = document.createElement('div')
     root.className = 'combobox'
@@ -302,7 +334,39 @@ export class AppCombobox extends CustomElement {
     this._listboxEl.hidden = true
     root.appendChild(this._listboxEl)
 
-    this.shadow.appendChild(root)
+    if (this._isFallback) {
+      // Adopt fallback styles once per instance
+      if (!this._fallbackStylesAdopted) {
+        this.adoptStyle(fallbackStyles)
+        this._fallbackStylesAdopted = true
+      }
+
+      // Wrap combobox in a section so CSS can toggle it
+      this._cbSection = document.createElement('div')
+      this._cbSection.className = 'cfs__combobox-section'
+      this._cbSection.appendChild(root)
+      this.shadow.appendChild(this._cbSection)
+
+      // Build the native select section
+      this._selSection = document.createElement('div')
+      this._selSection.className = 'cfs__select-section'
+      this._renderSelectSection(label, hint, error, disabled, required)
+      this.shadow.appendChild(this._selSection)
+
+      // Wire media query
+      if (this._mql) this._mql.removeEventListener('change', this._onPointerChange)
+      this._mql = window.matchMedia('(pointer: coarse)')
+      this._applyInert(this._mql.matches)
+      this._mql.addEventListener('change', this._onPointerChange)
+    } else {
+      // Clean up any previous fallback mode
+      if (this._mql) {
+        this._mql.removeEventListener('change', this._onPointerChange)
+        this._mql = null
+      }
+      this.shadow.appendChild(root)
+    }
+
     this._renderOptions(this._filteredOptions)
   }
 
@@ -354,6 +418,10 @@ export class AppCombobox extends CustomElement {
     // mousedown prevents blur firing before the click is processed
     this._listboxEl.addEventListener('mousedown', this._onListMousedown)
     this._listboxEl.addEventListener('click', this._onListClick)
+    // Native select (only in fallback mode)
+    if (this._selectEl) {
+      this._selectEl.addEventListener('change', this._onSelectChange)
+    }
   }
 
   // ── Private: event handlers (arrow functions keep `this` bound) ──────────────
@@ -550,6 +618,7 @@ export class AppCombobox extends CustomElement {
     this._value = value
     this._internals.setFormValue(value)
     this._syncSelectedState()
+    if (this._selectEl) this._selectEl.value = value
     this._syncValidity()
   }
 
@@ -602,6 +671,8 @@ export class AppCombobox extends CustomElement {
       this._inputEl.removeAttribute('aria-invalid')
       root?.classList.remove('combobox--error')
     }
+
+    if (this._selRoot) this._syncErrorSel(message)
   }
 
   private _addDescribedBy(id: string): void {
@@ -638,10 +709,188 @@ export class AppCombobox extends CustomElement {
       this._hintEl = null
       this._inputEl.removeAttribute('aria-describedby')
     }
+
+    if (this._selRoot) this._syncHintSel(hint)
   }
 
   private _getSelectedLabel(): string {
     return this._options.find((o) => o.value === this._value)?.label ?? ''
+  }
+
+  // ── Private: fallback-select rendering ───────────────────────────────────────
+
+  private _renderSelectSection(
+    label: string,
+    hint: string | null,
+    error: string | null,
+    disabled: boolean,
+    required: boolean,
+  ): void {
+    const selectId = `${this._uid}-sel-input`
+    const hintId = `${this._uid}-sel-hint`
+    const errorId = `${this._uid}-sel-error`
+
+    this._selRoot = document.createElement('div')
+    this._selRoot.className = 'combobox'
+    if (error) this._selRoot.classList.add('combobox--error')
+
+    // Label
+    this._selLabelEl = document.createElement('label')
+    this._selLabelEl.className = 'combobox__label'
+    this._selLabelEl.setAttribute('for', selectId)
+    this._selLabelEl.appendChild(document.createTextNode(label))
+    if (required) {
+      const asterisk = document.createElement('span')
+      asterisk.className = 'combobox__required'
+      asterisk.setAttribute('aria-hidden', 'true')
+      asterisk.textContent = ' *'
+      this._selLabelEl.appendChild(asterisk)
+    }
+    this._selRoot.appendChild(this._selLabelEl)
+
+    // Hint
+    this._selHintEl = null
+    if (hint) {
+      this._selHintEl = document.createElement('div')
+      this._selHintEl.className = 'combobox__hint'
+      this._selHintEl.id = hintId
+      this._selHintEl.textContent = hint
+      this._selRoot.appendChild(this._selHintEl)
+    }
+
+    // Error
+    this._selErrorEl = null
+    if (error) {
+      this._selErrorEl = document.createElement('div')
+      this._selErrorEl.className = 'combobox__error'
+      this._selErrorEl.id = errorId
+      this._selErrorEl.textContent = error
+      this._selRoot.appendChild(this._selErrorEl)
+    }
+
+    // Native select
+    this._selectEl = document.createElement('select')
+    this._selectEl.id = selectId
+    this._selectEl.className = 'cfs__select'
+    if (disabled) this._selectEl.disabled = true
+    if (required) this._selectEl.required = true
+    const selDescribedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ')
+    if (selDescribedBy) this._selectEl.setAttribute('aria-describedby', selDescribedBy)
+    if (error) this._selectEl.setAttribute('aria-invalid', 'true')
+
+    this._selRoot.appendChild(this._selectEl)
+    this._selSection!.appendChild(this._selRoot)
+    this._renderSelectOptions()
+  }
+
+  private _renderSelectOptions(): void {
+    if (!this._selectEl) return
+    this._selectEl.innerHTML = ''
+
+    // Empty placeholder option so required validation works
+    const emptyOpt = document.createElement('option')
+    emptyOpt.value = ''
+    emptyOpt.textContent = ''
+    this._selectEl.appendChild(emptyOpt)
+
+    for (const opt of this._options) {
+      const o = document.createElement('option')
+      o.value = opt.value
+      o.textContent = opt.label
+      o.disabled = opt.disabled ?? false
+      if (opt.value === this._value) o.selected = true
+      this._selectEl.appendChild(o)
+    }
+
+    this._selectEl.value = this._value
+  }
+
+  // ── Private: fallback-select event handlers ───────────────────────────────────
+
+  private _onSelectChange = (): void => {
+    if (!this._selectEl) return
+    const selectedOpt = this._options.find((o) => o.value === this._selectEl!.value)
+    if (selectedOpt) {
+      this._setCommittedValue(selectedOpt.value)
+      this.emit<ComboboxChangeDetail>('combobox-change', {
+        value: selectedOpt.value,
+        label: selectedOpt.label,
+      })
+    } else if (this._selectEl.value === '') {
+      this._setCommittedValue('')
+      this.emit<ComboboxChangeDetail>('combobox-change', { value: '', label: '' })
+    }
+  }
+
+  private _onPointerChange = (e: MediaQueryListEvent): void => {
+    this._applyInert(e.matches)
+  }
+
+  private _applyInert(isMobile: boolean): void {
+    if (this._cbSection) this._cbSection.inert = isMobile
+    if (this._selSection) this._selSection.inert = !isMobile
+  }
+
+  // ── Private: fallback-select sync helpers ─────────────────────────────────────
+
+  private _syncErrorSel(message: string | null): void {
+    if (!this._selRoot || !this._selectEl) return
+    const errorId = `${this._uid}-sel-error`
+
+    if (message) {
+      if (!this._selErrorEl) {
+        this._selErrorEl = document.createElement('div')
+        this._selErrorEl.className = 'combobox__error'
+        this._selErrorEl.id = errorId
+        this._selectEl.insertAdjacentElement('beforebegin', this._selErrorEl)
+        const current = this._selectEl.getAttribute('aria-describedby') ?? ''
+        const ids = current.split(' ').filter(Boolean)
+        if (!ids.includes(errorId)) {
+          this._selectEl.setAttribute('aria-describedby', [...ids, errorId].join(' '))
+        }
+      }
+      this._selErrorEl.textContent = message
+      this._selectEl.setAttribute('aria-invalid', 'true')
+      this._selRoot.classList.add('combobox--error')
+    } else {
+      this._selErrorEl?.remove()
+      this._selErrorEl = null
+      const current = this._selectEl.getAttribute('aria-describedby') ?? ''
+      const ids = current.split(' ').filter((s) => s !== errorId)
+      ids.length > 0
+        ? this._selectEl.setAttribute('aria-describedby', ids.join(' '))
+        : this._selectEl.removeAttribute('aria-describedby')
+      this._selectEl.removeAttribute('aria-invalid')
+      this._selRoot.classList.remove('combobox--error')
+    }
+  }
+
+  private _syncHintSel(hint: string | null): void {
+    if (!this._selRoot || !this._selectEl || !this._selLabelEl) return
+    const hintId = `${this._uid}-sel-hint`
+
+    if (hint) {
+      if (!this._selHintEl) {
+        this._selHintEl = document.createElement('div')
+        this._selHintEl.className = 'combobox__hint'
+        this._selHintEl.id = hintId
+        this._selLabelEl.insertAdjacentElement('afterend', this._selHintEl)
+        const current = this._selectEl.getAttribute('aria-describedby') ?? ''
+        const ids = current.split(' ').filter(Boolean)
+        if (!ids.includes(hintId)) {
+          this._selectEl.setAttribute('aria-describedby', [...ids, hintId].join(' '))
+        }
+      }
+      this._selHintEl.textContent = hint
+    } else {
+      this._selHintEl?.remove()
+      this._selHintEl = null
+      const current = this._selectEl.getAttribute('aria-describedby') ?? ''
+      const ids = current.split(' ').filter((s) => s !== hintId)
+      ids.length > 0
+        ? this._selectEl.setAttribute('aria-describedby', ids.join(' '))
+        : this._selectEl.removeAttribute('aria-describedby')
+    }
   }
 }
 
