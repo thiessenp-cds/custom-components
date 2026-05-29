@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Layout } from '../App'
 import IssueTable from '../components/IssueTable'
 import type { Issue } from '../components/IssueTable'
+import { ApiDocs } from '../components/ApiDocs'
 import type { ComboboxOption, ComboboxChangeDetail } from '../lib/components/combobox/combobox'
 // Registers <app-combobox> as a custom element
 import '../lib/components/combobox/combobox'
@@ -277,6 +278,25 @@ export default function ComboboxPage() {
       <p className="page-description">
         For a React compatible version, visit the <Link to="/combobox/react">React wrapped combobox</Link> page.
       </p>
+
+      <ApiDocs
+        attributes={[
+          { name: 'label',           type: 'string',  description: 'Visible label text. Required for accessibility.' },
+          { name: 'hint',            type: 'string',  description: 'Helper text shown below the label.' },
+          { name: 'placeholder',     type: 'string',  description: 'Input placeholder text (combobox mode only).' },
+          { name: 'name',            type: 'string',  description: 'Form field name used in FormData submission.' },
+          { name: 'value',           type: 'string',  description: 'Committed selected value.' },
+          { name: 'options',         type: 'string',  description: <>JSON array of option objects: <code>{'[{"value":"ca","label":"Canada"}]'}</code>. Can also be provided as child <code>&lt;option&gt;</code> elements.</> },
+          { name: 'required',        type: 'boolean', default: 'false', description: 'Marks the field as required. Wired to ElementInternals validity.' },
+          { name: 'disabled',        type: 'boolean', default: 'false', description: 'Disables the control.' },
+          { name: 'error',           type: 'string',  description: 'Error message. Applies error styling and announces the message when set.' },
+          { name: 'fallback-select', type: 'boolean', default: 'false', description: <>On touch/mobile devices (<code>pointer: coarse</code>), renders a native <code>&lt;select&gt;</code> instead of the combobox widget.</> },
+        ]}
+        events={[
+          { name: 'combobox-change', detail: '{ value: string, label: string }', description: 'Fires when the user commits a selection.' },
+          { name: 'combobox-input',  detail: '{ inputValue: string }',            description: 'Fires on each keystroke in the text input.' },
+        ]}
+      />
 
       <IssueTable issues={ISSUES} />
 

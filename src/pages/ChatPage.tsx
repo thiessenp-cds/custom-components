@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Layout } from '../App'
 import { Chat, MockChatAdapter } from '../lib/components/chat'
+import { ApiDocs } from '../components/ApiDocs'
 import '../styles/page.css'
 
 export default function ChatPage() {
@@ -28,6 +29,19 @@ export default function ChatPage() {
         <li>Online and away contacts will auto-reply after a short delay.</li>
         <li>Watch the delivery status tick from ○ → ✓ → ✓✓ → ✓✓ (blue = read).</li>
       </ul>
+
+      <ApiDocs
+        properties={[
+          {
+            name: 'adapter',
+            type: 'ChatAdapter',
+            description: <>The service adapter that provides contacts, message history, and real-time events. Implement the <code>ChatAdapter</code> interface to connect any backend (WebSocket, SSE, polling, etc.). The built-in <code>MockChatAdapter</code> is provided for testing.</>,
+          },
+        ]}
+        cssProperties={[
+          { name: '--chat-height', default: '580px', description: 'Controls the height of the component. Accepts any valid CSS length value.' },
+        ]}
+      />
 
       <hr className="page-divider" />
 

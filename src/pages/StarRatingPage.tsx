@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Layout } from '../App'
 import { StarRating } from '../lib/components/star-rating'
 import type { StarRatingChangeDetail } from '../lib/components/star-rating'
+import { ApiDocs } from '../components/ApiDocs'
 import '../styles/page.css'
 
 // ── Local helpers ─────────────────────────────────────────────────────────────
@@ -64,12 +65,28 @@ export default function StarRatingPage() {
   return (
     <Layout backLink>
       <h1>Star Rating</h1>
-      <p>
+      <p className="page-description">
         An accessible star rating input using the WAI-ARIA radiogroup pattern. Roving
         tabindex, arrow-key navigation, hover highlighting, and a sparkle animation on
         selection (respects <code>prefers-reduced-motion</code>).
         See <a href="https://www.w3.org/WAI/ARIA/apg/patterns/radio/examples/radio-rating/">W3C Star Radio example</a>.
       </p>
+
+      <ApiDocs
+        attributes={[
+          { name: 'label',    type: 'string',  description: 'Visible label for the rating group. Required for accessibility.' },
+          { name: 'hint',     type: 'string',  description: 'Helper text shown below the label.' },
+          { name: 'name',     type: 'string',  description: 'Form field name used in FormData submission.' },
+          { name: 'value',    type: 'string',  description: <>Currently selected star value. One of <code>"1"</code>–<code>"5"</code>.</> },
+          { name: 'required', type: 'boolean', default: 'false', description: 'Marks the field as required. Wired to ElementInternals validity.' },
+          { name: 'error',    type: 'string',  description: 'Error message. Applies error styling when set.' },
+        ]}
+        events={[
+          { name: 'star-rating-change', detail: '{ value: string }', description: <>Fires when a star is selected. <code>value</code> is <code>"1"</code>–<code>"5"</code>.</> },
+        ]}
+      />
+
+      <hr className="page-divider" />
 
       <Section title="Default">
         <Demo label="Rate your experience" />

@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Layout } from '../App'
 import { DatePicker, DateRangePicker } from '../lib/components/date-picker'
 import type { DateChangeDetail, DateRangeChangeDetail } from '../lib/components/date-picker'
+import { ApiDocs } from '../components/ApiDocs'
 import '../styles/page.css'
 
 // ── Local helpers ─────────────────────────────────────────────────────────────
@@ -268,6 +269,30 @@ export default function DatePickerPage() {
         and form association. The same custom element supports both single-date
         and date-range selection via the <code>range</code> attribute.
       </p>
+
+      <ApiDocs
+        attributes={[
+          { name: 'label',       type: 'string',  description: 'Visible label text. Required for accessibility.' },
+          { name: 'hint',        type: 'string',  description: 'Helper text shown below the label.' },
+          { name: 'name',        type: 'string',  description: 'Form field name used in FormData submission.' },
+          { name: 'value',       type: 'string',  description: <>Selected date in <code>YYYY-MM-DD</code> format (single mode).</> },
+          { name: 'min',         type: 'string',  description: <>Earliest selectable date in <code>YYYY-MM-DD</code> format.</> },
+          { name: 'max',         type: 'string',  description: <>Latest selectable date in <code>YYYY-MM-DD</code> format.</> },
+          { name: 'required',    type: 'boolean', default: 'false', description: 'Marks the field as required. Wired to ElementInternals validity.' },
+          { name: 'disabled',    type: 'boolean', default: 'false', description: 'Disables the entire control.' },
+          { name: 'error',       type: 'string',  description: 'Error message. Applies error styling when set.' },
+          { name: 'range',       type: 'boolean', default: 'false', description: 'Enables date range mode. Shows start and end inputs instead of a single date field.' },
+          { name: 'value-start', type: 'string',  description: <>Range start date in <code>YYYY-MM-DD</code> format. Range mode only.</> },
+          { name: 'value-end',   type: 'string',  description: <>Range end date in <code>YYYY-MM-DD</code> format. Range mode only.</> },
+        ]}
+        properties={[
+          { name: 'disabledDates', type: 'string[]', description: <>Array of <code>YYYY-MM-DD</code> date strings to disable individually (e.g. booked dates, holidays).</> },
+        ]}
+        events={[
+          { name: 'date-change',       detail: '{ value: string }',          description: 'Fires when a date is committed in single mode.' },
+          { name: 'date-range-change', detail: '{ start: string, end: string }', description: 'Fires when both range endpoints are committed in range mode.' },
+        ]}
+      />
 
       {/* ── Single date ───────────────────────────────────────────────── */}
 
